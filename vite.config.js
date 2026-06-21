@@ -8,4 +8,5 @@ export default defineConfig({
     vue(),
     tailwindcss(), // 2. Tambahkan fungsi ini di dalam array plugins
   ],
+    base: '/', // tambah ini
 })
