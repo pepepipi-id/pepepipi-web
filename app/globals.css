@@ -5,7 +5,7 @@
   /* AKXEN BIRU (Hanya untuk penanda, highlight, atau brand identity) */
   --color-brand-blue: #5CA7D4;       /* Biru pastel utama ramah anak (sebagai aksen) */
   --color-brand-blue-hover: #4a96c3; /* Biru saat tombol di-hover */
-  
+
   /* BASE WARNA HANGAT (Dominan untuk atmosfer web keseluruhan) */
   --color-bg-base-warm: #FAFAF8;     /* Latar belakang web krem netral sangat adem & hangat */
   --color-bg-warm-highlight: #FFFDF9;/* Warna putih-krem hangat untuk sekat kontras */
@@ -13,11 +13,11 @@
   /* KARTU AKTIVITAS (Dibuat tetap soft dengan sentuhan hangat/biru tipis) */
   --color-bg-blue-card: #F4F9FC;     /* Latar kartu aktivitas (biru yang sangat soft mendekati putih) */
   --color-border-blue-card: #D2EAF7; /* Border kartu aktivitas anak */
-  
+
   /* KARTU HAMPERS (Sangat hangat dan homey) */
   --color-bg-orange-card: #FFF5EC;   /* Latar kartu hampers peach/oranye lembut */
   --color-border-orange-card: #FED7B7;/* Border kartu hampers */
-  
+
   /* WARNA TEKS (Menggunakan undertone cokelat/slate hangat, NO JET BLACK) */
   --color-text-dark: #292524;        /* Stone-800: cokelat tua/abu hangat gelap agar mata rileks */
   --color-text-muted: #78716c;       /* Stone-500: warna teks sekunder yang netral hangat */
@@ -52,6 +52,11 @@
 .text-brand-blue { color: var(--color-brand-blue); }
 .text-main-dark { color: var(--color-text-dark); }
 .text-main-muted { color: var(--color-text-muted); }
+
+/* Sticky mobile WhatsApp CTA bar - di atas navbar (z-50) saat scroll */
+.sticky-cta-bar {
+  z-index: 60;
+}
 
 /* Tombol CTA Utama (Sekarang menjadi jembatan aksen biru yang aman) */
 .btn-primary-pastel {

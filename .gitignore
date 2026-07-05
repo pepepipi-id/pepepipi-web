@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Logs
 logs
 *.log
@@ -9,9 +8,14 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+.next
+out
 dist
 dist-ssr
 *.local
+.env
+.env.local
+.claude
 
 # Editor directories and files
 .vscode/*
@@ -23,9 +27,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-=======
-node_modules
-dist
-.env
-.env.local
->>>>>>> b4efa5e00656edd3192de84c9def46407dd2e567
