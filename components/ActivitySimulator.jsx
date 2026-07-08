@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { buildWaLink } from '../lib/wa'
+import ActivityResultCard from './cards/ActivityResultCard'
 
-export default function ActivitySimulator() {
+export default function ActivitySimulator({ includeDrafts = false }) {
   const [filter, setFilter] = useState({
     usia: '5 Tahun',
     durasi: '20 Menit',
@@ -14,14 +15,16 @@ export default function ActivitySimulator() {
   const [bahanBaku, setBahanBaku] = useState([])
 
   async function cariIde() {
-    const { data: ide } = await supabase
+    let query = supabase
       .from('activity_ideas')
       .select('*')
       .eq('usia', filter.usia)
       .eq('durasi', filter.durasi)
       .eq('lokasi', filter.lokasi)
-      .eq('is_active', true)
-      .maybeSingle()
+
+    if (!includeDrafts) query = query.eq('is_active', true)
+
+    const { data: ide } = await query.maybeSingle()
 
     setHasilIde(ide)
 
@@ -106,17 +109,7 @@ export default function ActivitySimulator() {
           <div className="lg:col-span-4">
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">📍 Rekomendasi Ide</p>
             {hasilIde ? (
-              <div className="bg-[#F3F8FC] border border-[#BDE2F7] rounded-2xl p-4 shadow-xs">
-                <img src={hasilIde.foto_aktivitas} className="w-full h-44 object-cover rounded-xl mb-4" alt="Ide Main" />
-                <h3 className="font-bold text-base text-slate-800 mb-2">{hasilIde.judul_aktivitas}</h3>
-                <div className="space-y-1 text-xs text-slate-500 mb-4">
-                  <p>⏱️ {hasilIde.durasi}</p>
-                  <p>🏠 {hasilIde.lokasi}</p>
-                </div>
-                <button className="w-full border border-[#FFC89A] text-[#633806] font-medium py-2 rounded-xl text-sm bg-[#faeeda] hover:bg-[#FFC89A]/40">
-                  Lihat Detail
-                </button>
-              </div>
+              <ActivityResultCard idea={hasilIde} />
             ) : (
               <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-8 text-center text-xs text-slate-400">
                 Pilih filter di kiri lalu klik Cari Ide

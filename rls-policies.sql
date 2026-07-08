@@ -4,3 +4,8 @@
 -- can update; public (anon) read access is untouched.
 
 create policy "Admin update" on public.products for update to authenticated using (true) with check (true);
+
+-- Adds the same UPDATE permission for activity_ideas and testimonials, needed
+-- for the admin panel's new Publish/Unpublish toggle (draft-by-default workflow).
+create policy "Admin update" on public.activity_ideas for update to authenticated using (true) with check (true);
+create policy "Admin update" on public.testimonials for update to authenticated using (true) with check (true);

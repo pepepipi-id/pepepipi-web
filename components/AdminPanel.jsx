@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { uploadImage } from '../lib/uploadImage'
 import ImageDropzone from './ImageDropzone'
+import ProductCard from './cards/ProductCard'
+import TestimonialCard from './cards/TestimonialCard'
+import ActivityResultCard from './cards/ActivityResultCard'
 
 const TABS = [
   { id: 'produk', label: '🛍️ Produk' },
@@ -16,6 +19,17 @@ export default function AdminPanel() {
 
   return (
     <div className="max-w-6xl mx-auto px-4">
+      <div className="flex justify-end mb-4">
+        <a
+          href="/admin/preview"
+          target="_blank"
+          rel="noreferrer"
+          className="text-xs md:text-sm font-bold text-white bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded-xl transition inline-flex items-center gap-1.5"
+        >
+          🖥️ Preview Halaman Utama
+        </a>
+      </div>
+
       <div className="flex gap-2 mb-6 border-b border-gray-200">
         {TABS.map((tab) => (
           <button
@@ -48,6 +62,28 @@ function StatusBanner({ statusMsg }) {
   )
 }
 
+function StatusBadge({ isActive }) {
+  return (
+    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${isActive ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+      {isActive ? '✅ Published' : '📝 Draft'}
+    </span>
+  )
+}
+
+function PreviewModal({ onClose, children }) {
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl p-5 max-w-sm w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">Pratinjau Tampilan</span>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-sm cursor-pointer">✕ Tutup</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  )
+}
+
 /* ============================= PRODUK TAB ============================= */
 
 function ProdukTab() {
@@ -65,6 +101,7 @@ function ProdukTab() {
   const [aktivitasItems, setAktivitasItems] = useState([])
   const [hampersItems, setHampersItems] = useState([])
   const [loadingList, setLoadingList] = useState(true)
+  const [previewItem, setPreviewItem] = useState(null)
 
   async function fetchAndRenderProducts() {
     try {
@@ -87,6 +124,16 @@ function ProdukTab() {
   useEffect(() => {
     fetchAndRenderProducts()
   }, [])
+
+  async function togglePublish(id, current) {
+    try {
+      const { error } = await supabase.from('products').update({ is_active: !current }).eq('id', id)
+      if (error) throw error
+      fetchAndRenderProducts()
+    } catch (err) {
+      alert('Gagal mengubah status publikasi: ' + err.message)
+    }
+  }
 
   async function deleteProduct(id, nama) {
     if (!confirm(`Apakah kamu yakin ingin menghapus "${nama}"?`)) return
@@ -168,9 +215,9 @@ function ProdukTab() {
         if (updateError) throw updateError
         setStatusMsg({ type: 'success', text: `Berhasil memperbarui "${nama}"!` })
       } else {
-        const { error: insertError } = await supabase.from('products').insert([{ ...payload, is_active: true }])
+        const { error: insertError } = await supabase.from('products').insert([{ ...payload, is_active: false }])
         if (insertError) throw insertError
-        setStatusMsg({ type: 'success', text: `Berhasil menambahkan "${nama}"!` })
+        setStatusMsg({ type: 'success', text: `Berhasil menambahkan "${nama}" sebagai draf. Klik "Publish" di daftar untuk menampilkannya di halaman utama.` })
       }
 
       resetForm()
@@ -269,14 +316,20 @@ function ProdukTab() {
       </div>
 
       <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-        <ProductList title="Aktivitas Anak" dotColor="bg-[#5CA7D4]" countColor="bg-blue-50 text-[#5CA7D4]" items={aktivitasItems} loading={loadingList} emptyText="Belum ada data aktivitas" onDelete={deleteProduct} onEdit={startEdit} />
-        <ProductList title="Paket Hampers" dotColor="bg-orange-400" countColor="bg-orange-50 text-orange-500" items={hampersItems} loading={loadingList} emptyText="Belum ada data hampers" onDelete={deleteProduct} onEdit={startEdit} />
+        <ProductList title="Aktivitas Anak" dotColor="bg-[#5CA7D4]" countColor="bg-blue-50 text-[#5CA7D4]" items={aktivitasItems} loading={loadingList} emptyText="Belum ada data aktivitas" onDelete={deleteProduct} onEdit={startEdit} onTogglePublish={togglePublish} onPreview={setPreviewItem} />
+        <ProductList title="Paket Hampers" dotColor="bg-orange-400" countColor="bg-orange-50 text-orange-500" items={hampersItems} loading={loadingList} emptyText="Belum ada data hampers" onDelete={deleteProduct} onEdit={startEdit} onTogglePublish={togglePublish} onPreview={setPreviewItem} />
       </div>
+
+      {previewItem && (
+        <PreviewModal onClose={() => setPreviewItem(null)}>
+          <ProductCard item={previewItem} variant={(previewItem.kategori || 'aktivitas').toLowerCase()} />
+        </PreviewModal>
+      )}
     </div>
   )
 }
 
-function ProductList({ title, dotColor, countColor, items, loading, emptyText, onDelete, onEdit }) {
+function ProductList({ title, dotColor, countColor, items, loading, emptyText, onDelete, onEdit, onTogglePublish, onPreview }) {
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
       <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
@@ -300,7 +353,10 @@ function ProductList({ title, dotColor, countColor, items, loading, emptyText, o
                 alt={item.nama_produk || 'Produk'}
               />
               <div className="min-w-0">
-                <h4 className="text-sm font-semibold text-gray-800 truncate">{item.nama_produk || 'Tanpa Nama'}</h4>
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <h4 className="text-sm font-semibold text-gray-800 truncate">{item.nama_produk || 'Tanpa Nama'}</h4>
+                  <StatusBadge isActive={item.is_active} />
+                </div>
                 <p className="text-xs text-gray-500 font-medium">Rp {Number(item.harga).toLocaleString('id-ID')}</p>
                 <p className="text-[11px] text-orange-500 font-semibold">
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 font-semibold">
@@ -310,6 +366,18 @@ function ProductList({ title, dotColor, countColor, items, loading, emptyText, o
               </div>
             </div>
             <div className="flex flex-col gap-1 opacity-80 md:opacity-0 group-hover:opacity-100">
+              <button
+                onClick={() => onPreview(item)}
+                className="text-xs text-gray-500 hover:text-gray-700 font-medium cursor-pointer p-1 rounded hover:bg-gray-100 transition"
+              >
+                👁️ Preview
+              </button>
+              <button
+                onClick={() => onTogglePublish(item.id, item.is_active)}
+                className={`text-xs font-medium cursor-pointer p-1 rounded transition ${item.is_active ? 'text-amber-600 hover:bg-amber-50' : 'text-green-600 hover:bg-green-50'}`}
+              >
+                {item.is_active ? '📥 Unpublish' : '📢 Publish'}
+              </button>
               <button
                 onClick={() => onEdit(item)}
                 className="text-xs text-[#5CA7D4] hover:text-[#4b96c2] font-medium cursor-pointer p-1 rounded hover:bg-blue-50 transition"
@@ -346,6 +414,7 @@ function AktivitasTab() {
   const [submitting, setSubmitting] = useState(false)
 
   const [selectedIdeaId, setSelectedIdeaId] = useState('')
+  const [previewIdea, setPreviewIdea] = useState(null)
   const [materials, setMaterials] = useState([])
   const [namaBarang, setNamaBarang] = useState('')
   const [hargaBarang, setHargaBarang] = useState('')
@@ -388,6 +457,16 @@ function AktivitasTab() {
   useEffect(() => {
     fetchMaterials(selectedIdeaId)
   }, [selectedIdeaId])
+
+  async function toggleIdeaPublish(id, current) {
+    try {
+      const { error } = await supabase.from('activity_ideas').update({ is_active: !current }).eq('id', id)
+      if (error) throw error
+      fetchIdeas()
+    } catch (err) {
+      alert('Gagal mengubah status publikasi: ' + err.message)
+    }
+  }
 
   async function deleteIdea(id, title) {
     if (!confirm(`Hapus ide aktivitas "${title}"? Bahan terkait juga akan terhapus.`)) return
@@ -433,13 +512,13 @@ function AktivitasTab() {
           lokasi,
           judul_aktivitas: judul,
           foto_aktivitas: fotoUrl,
-          is_active: true,
+          is_active: false,
         },
       ])
 
       if (error) throw error
 
-      setStatusMsg({ type: 'success', text: `Berhasil menambahkan "${judul}"!` })
+      setStatusMsg({ type: 'success', text: `Berhasil menambahkan "${judul}" sebagai draf. Klik "Publish" di daftar untuk menampilkannya di halaman utama.` })
       setJudul('')
       setImageFile(null)
       setDropzoneKey((k) => k + 1)
@@ -576,16 +655,33 @@ function AktivitasTab() {
                     alt={idea.judul_aktivitas}
                   />
                   <div className="min-w-0">
-                    <h4 className="text-sm font-semibold text-gray-800 truncate">{idea.judul_aktivitas}</h4>
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <h4 className="text-sm font-semibold text-gray-800 truncate">{idea.judul_aktivitas}</h4>
+                      <StatusBadge isActive={idea.is_active} />
+                    </div>
                     <p className="text-xs text-gray-500">{idea.usia} · {idea.durasi} · {idea.lokasi}</p>
                   </div>
                 </div>
-                <button
-                  onClick={(e) => { e.stopPropagation(); deleteIdea(idea.id, idea.judul_aktivitas) }}
-                  className="text-xs text-red-400 hover:text-red-600 font-medium cursor-pointer p-1 rounded hover:bg-red-50 transition opacity-80 md:opacity-0 group-hover:opacity-100"
-                >
-                  🗑️
-                </button>
+                <div className="flex items-center gap-1 opacity-80 md:opacity-0 group-hover:opacity-100 flex-shrink-0">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setPreviewIdea(idea) }}
+                    className="text-xs text-gray-500 hover:text-gray-700 font-medium cursor-pointer p-1 rounded hover:bg-gray-100 transition"
+                  >
+                    👁️
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleIdeaPublish(idea.id, idea.is_active) }}
+                    className={`text-xs font-medium cursor-pointer p-1 rounded transition ${idea.is_active ? 'text-amber-600 hover:bg-amber-50' : 'text-green-600 hover:bg-green-50'}`}
+                  >
+                    {idea.is_active ? '📥' : '📢'}
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteIdea(idea.id, idea.judul_aktivitas) }}
+                    className="text-xs text-red-400 hover:text-red-600 font-medium cursor-pointer p-1 rounded hover:bg-red-50 transition"
+                  >
+                    🗑️
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -674,6 +770,12 @@ function AktivitasTab() {
           </div>
         </div>
       </div>
+
+      {previewIdea && (
+        <PreviewModal onClose={() => setPreviewIdea(null)}>
+          <ActivityResultCard idea={previewIdea} />
+        </PreviewModal>
+      )}
     </div>
   )
 }
@@ -690,6 +792,7 @@ function TestimoniTab() {
   const [dropzoneKey, setDropzoneKey] = useState(0)
   const [statusMsg, setStatusMsg] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [previewItem, setPreviewItem] = useState(null)
 
   async function fetchTestimonials() {
     try {
@@ -709,6 +812,16 @@ function TestimoniTab() {
   useEffect(() => {
     fetchTestimonials()
   }, [])
+
+  async function toggleTestimonialPublish(id, current) {
+    try {
+      const { error } = await supabase.from('testimonials').update({ is_active: !current }).eq('id', id)
+      if (error) throw error
+      fetchTestimonials()
+    } catch (err) {
+      alert('Gagal mengubah status publikasi: ' + err.message)
+    }
+  }
 
   async function deleteTestimonial(id) {
     if (!confirm('Hapus testimoni ini?')) return
@@ -738,13 +851,13 @@ function TestimoniTab() {
           nama_klien: nama,
           isi_testimoni: isi,
           foto_url: fotoUrl,
-          is_active: true,
+          is_active: false,
         },
       ])
 
       if (error) throw error
 
-      setStatusMsg({ type: 'success', text: `Berhasil menambahkan testimoni dari "${nama}"!` })
+      setStatusMsg({ type: 'success', text: `Berhasil menambahkan testimoni dari "${nama}" sebagai draf. Klik "Publish" di daftar untuk menampilkannya di halaman utama.` })
       setNama('')
       setIsi('')
       setImageFile(null)
@@ -821,20 +934,43 @@ function TestimoniTab() {
                   <img src={item.foto_url} className="w-10 h-10 rounded-full object-cover flex-shrink-0" alt={item.nama_klien} />
                 )}
                 <div className="min-w-0">
-                  <h4 className="text-sm font-semibold text-gray-800">{item.nama_klien}</h4>
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <h4 className="text-sm font-semibold text-gray-800">{item.nama_klien}</h4>
+                    <StatusBadge isActive={item.is_active} />
+                  </div>
                   <p className="text-xs text-gray-500 leading-relaxed">{item.isi_testimoni}</p>
                 </div>
               </div>
-              <button
-                onClick={() => deleteTestimonial(item.id)}
-                className="text-xs text-red-400 hover:text-red-600 font-medium cursor-pointer p-1 rounded hover:bg-red-50 transition opacity-80 md:opacity-0 group-hover:opacity-100 flex-shrink-0"
-              >
-                🗑️
-              </button>
+              <div className="flex items-center gap-1 opacity-80 md:opacity-0 group-hover:opacity-100 flex-shrink-0">
+                <button
+                  onClick={() => setPreviewItem(item)}
+                  className="text-xs text-gray-500 hover:text-gray-700 font-medium cursor-pointer p-1 rounded hover:bg-gray-100 transition"
+                >
+                  👁️
+                </button>
+                <button
+                  onClick={() => toggleTestimonialPublish(item.id, item.is_active)}
+                  className={`text-xs font-medium cursor-pointer p-1 rounded transition ${item.is_active ? 'text-amber-600 hover:bg-amber-50' : 'text-green-600 hover:bg-green-50'}`}
+                >
+                  {item.is_active ? '📥' : '📢'}
+                </button>
+                <button
+                  onClick={() => deleteTestimonial(item.id)}
+                  className="text-xs text-red-400 hover:text-red-600 font-medium cursor-pointer p-1 rounded hover:bg-red-50 transition"
+                >
+                  🗑️
+                </button>
+              </div>
             </div>
           ))}
         </div>
       </div>
+
+      {previewItem && (
+        <PreviewModal onClose={() => setPreviewItem(null)}>
+          <TestimonialCard item={previewItem} />
+        </PreviewModal>
+      )}
     </div>
   )
 }

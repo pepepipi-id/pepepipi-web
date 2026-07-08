@@ -7,10 +7,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "deploy": "npm run build && touch out/.nojekyll && gh-pages -d out"
+    "deploy": "npm run build && gh-pages -d out --dotfiles"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",
+    "chart.js": "^4.4.0",
     "next": "^15.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

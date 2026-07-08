@@ -2,18 +2,18 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import TestimonialCard from './cards/TestimonialCard'
 
-export default function Testimoni() {
+export default function Testimoni({ includeDrafts = false }) {
   const [testimonials, setTestimonials] = useState([])
 
   useEffect(() => {
     async function load() {
       try {
-        const { data, error } = await supabase
-          .from('testimonials')
-          .select('*')
-          .eq('is_active', true)
-          .limit(6)
+        let query = supabase.from('testimonials').select('*').limit(6)
+        if (!includeDrafts) query = query.eq('is_active', true)
+
+        const { data, error } = await query
 
         if (error) {
           console.error('Error Testimoni:', error)
@@ -25,7 +25,7 @@ export default function Testimoni() {
       }
     }
     load()
-  }, [])
+  }, [includeDrafts])
 
   if (testimonials.length === 0) return null
 
@@ -42,18 +42,7 @@ export default function Testimoni() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {testimonials.map((item) => (
-          <div
-            key={item.id}
-            className="bg-white border border-slate-100 rounded-2xl p-5 shadow-xs flex flex-col gap-3"
-          >
-            <div className="flex items-center gap-3">
-              {item.foto_url && (
-                <img src={item.foto_url} loading="lazy" className="w-10 h-10 rounded-full object-cover flex-shrink-0" alt={item.nama_klien} />
-              )}
-              <h3 className="font-bold text-sm text-[#1e293b]">{item.nama_klien}</h3>
-            </div>
-            <p className="text-sm text-main-muted leading-relaxed">{item.isi_testimoni}</p>
-          </div>
+          <TestimonialCard key={item.id} item={item} />
         ))}
       </div>
     </section>
