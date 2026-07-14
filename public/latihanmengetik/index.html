@@ -514,7 +514,7 @@ class Component extends DCLogic {
       const spans = box.querySelectorAll('span');
       const cur = spans[act.pos];
       if (cur) {
-        cur.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        cur.scrollIntoView({ block: 'nearest', behavior: 'instant' });
       }
     }
   }
