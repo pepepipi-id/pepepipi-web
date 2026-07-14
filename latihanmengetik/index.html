@@ -509,7 +509,7 @@ class Component extends DCLogic {
     if (act && (act.kind==='level' || act.kind==='article') && this.inputRef.current) {
       this.inputRef.current.focus();
     }
-    if (act && act.kind==='article' && this.typeAreaRef.current) {
+    if (act && act.kind==='article' && this.typeAreaRef.current && this.typeAreaRef.current.clientHeight > 0) {
       const box = this.typeAreaRef.current;
       const spans = box.querySelectorAll('span');
       const cur = spans[act.pos];
