@@ -82,6 +82,7 @@
           <div style="display:flex;gap:6px;">
             <button class="btn btn-primary" onClick="{{ u.onPick }}" style="font-size:12px;padding:7px 14px;">Ini saya</button>
             <button class="btn btn-secondary" onClick="{{ u.onRename }}" style="font-size:12px;padding:7px 12px;">Ubah</button>
+            <button class="btn btn-secondary" onClick="{{ u.onResetPassword }}" style="font-size:12px;padding:7px 12px;">Reset password</button>
             <button class="btn btn-secondary" onClick="{{ u.onDelete }}" style="font-size:12px;padding:7px 12px;">Hapus</button>
           </div>
         </div>
@@ -515,10 +516,11 @@ class Component extends DCLogic {
       const cur = spans[act.pos];
       if (cur) {
         const lineHeight = cur.offsetHeight || 1;
+        const safeBottom = box.scrollTop + box.clientHeight - lineHeight;
         if (cur.offsetTop < box.scrollTop) {
           box.scrollTop = Math.floor(cur.offsetTop / lineHeight) * lineHeight;
-        } else if (cur.offsetTop + lineHeight > box.scrollTop + box.clientHeight) {
-          box.scrollTop = Math.ceil((cur.offsetTop + lineHeight - box.clientHeight) / lineHeight) * lineHeight;
+        } else if (cur.offsetTop + lineHeight > safeBottom) {
+          box.scrollTop = Math.ceil((cur.offsetTop + lineHeight - safeBottom) / lineHeight) * lineHeight;
         }
       }
     }
@@ -791,8 +793,11 @@ class Component extends DCLogic {
     this.accountError='';
     if(!name){ this.accountError='Nama tidak boleh kosong.'; this.rr(); return; }
     if(this.usernameTaken(name,null)){ this.accountError='Nama sudah dipakai.'; this.rr(); return; }
+    const pw = prompt('Buat password untuk pengguna ini (minimal 4 karakter):');
+    if(pw===null) return;
+    if(pw.trim().length<4){ this.accountError='Password minimal 4 karakter.'; this.rr(); return; }
     const id = (crypto.randomUUID?crypto.randomUUID():'u'+Date.now());
-    this.users.push({id, username:name, createdAt:Date.now()});
+    this.users.push({id, username:name, password:pw.trim(), createdAt:Date.now()});
     this.progressByUser[id] = {history:[]};
     this.queueWrite('users.json', this.users);
     this.queueWrite('progress-'+id+'.json', {history:[]});
@@ -801,6 +806,17 @@ class Component extends DCLogic {
   };
   pickUser = async (id)=>{
     const u=this.users.find(x=>x.id===id); if(!u) return;
+    this.accountError='';
+    if(u.password){
+      const pw=prompt('Masukkan password untuk masuk sebagai "'+u.username+'":');
+      if(pw===null) return;
+      if(pw.trim()!==u.password){ this.accountError='Password salah.'; this.rr(); return; }
+    } else {
+      const pw=prompt('Akun ini belum punya password. Buat password sekarang (minimal 4 karakter):');
+      if(pw===null) return;
+      if(pw.trim().length<4){ this.accountError='Password minimal 4 karakter.'; this.rr(); return; }
+      u.password=pw.trim(); this.queueWrite('users.json', this.users);
+    }
     this.myUserId=u.id; this.myUsername=u.username; localStorage.setItem(this.MY_USER_ID_KEY, u.id);
     this.loadMyProgress(); await this.goHome();
   };
@@ -820,6 +836,13 @@ class Component extends DCLogic {
     delete this.progressByUser[id];
     if(id===this.myUserId){ this.myUserId=null; this.myUsername=''; localStorage.removeItem(this.MY_USER_ID_KEY); this.progress={history:[]}; }
     this.rr();
+  };
+  resetUserPassword = async (id)=>{
+    const u=this.users.find(x=>x.id===id); if(!u) return;
+    if(!this.checkSupervisorPin()) return;
+    const pw=prompt('Password baru untuk "'+u.username+'" (minimal 4 karakter):'); if(pw===null) return;
+    if(pw.trim().length<4){ alert('Password minimal 4 karakter.'); return; }
+    u.password=pw.trim(); this.queueWrite('users.json', this.users);
   };
   onSwitchUser = ()=>{ this.accountError=''; this.s.screen='users'; this.rr(); };
 
@@ -1071,7 +1094,7 @@ class Component extends DCLogic {
     V.isPin=scr==='pin'; V.isDashboard=scr==='dashboard'; V.isTrends=scr==='trends'; V.isArticles=scr==='articles';
 
     // users
-    V.userRows=this.users.map(u=>({id:u.id, username:u.username, onPick:()=>this.pickUser(u.id), onRename:()=>this.renameUser(u.id), onDelete:()=>this.deleteUser(u.id)}));
+    V.userRows=this.users.map(u=>({id:u.id, username:u.username, onPick:()=>this.pickUser(u.id), onRename:()=>this.renameUser(u.id), onResetPassword:()=>this.resetUserPassword(u.id), onDelete:()=>this.deleteUser(u.id)}));
 
     if(scr==='home'){
       // greeting (article-based only)
