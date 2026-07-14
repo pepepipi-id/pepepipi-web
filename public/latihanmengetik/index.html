@@ -516,11 +516,10 @@ class Component extends DCLogic {
       const cur = spans[act.pos];
       if (cur) {
         const lineHeight = cur.offsetHeight || 1;
-        const safeBottom = box.scrollTop + box.clientHeight - lineHeight;
         if (cur.offsetTop < box.scrollTop) {
           box.scrollTop = Math.floor(cur.offsetTop / lineHeight) * lineHeight;
-        } else if (cur.offsetTop + lineHeight > safeBottom) {
-          box.scrollTop = Math.ceil((cur.offsetTop + lineHeight - safeBottom) / lineHeight) * lineHeight;
+        } else if (cur.offsetTop + 2*lineHeight > box.scrollTop + box.clientHeight) {
+          box.scrollTop = Math.ceil((cur.offsetTop + 2*lineHeight - box.clientHeight) / lineHeight) * lineHeight;
         }
       }
     }
