@@ -515,7 +515,10 @@ class Component extends DCLogic {
       const cur = spans[act.pos];
       if (cur) {
         const curTop = cur.offsetTop;
-        if (curTop > box.clientHeight - 60 || curTop < box.scrollTop) {
+        const curBottom = curTop + cur.offsetHeight;
+        const viewTop = box.scrollTop;
+        const viewBottom = viewTop + box.clientHeight;
+        if (curBottom > viewBottom - 20 || curTop < viewTop + 20) {
           box.scrollTo({ top: Math.max(0, curTop - box.clientHeight / 2), behavior: 'smooth' });
         }
       }
