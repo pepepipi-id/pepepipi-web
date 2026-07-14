@@ -511,10 +511,15 @@ class Component extends DCLogic {
     }
     if (act && act.kind==='article' && this.typeAreaRef.current && this.typeAreaRef.current.clientHeight > 0) {
       const box = this.typeAreaRef.current;
-      const spans = box.querySelectorAll('span');
+      const spans = box.querySelectorAll(':scope > span');
       const cur = spans[act.pos];
       if (cur) {
-        cur.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+        const lineHeight = cur.offsetHeight || 1;
+        if (cur.offsetTop < box.scrollTop) {
+          box.scrollTop = Math.floor(cur.offsetTop / lineHeight) * lineHeight;
+        } else if (cur.offsetTop + lineHeight > box.scrollTop + box.clientHeight) {
+          box.scrollTop = Math.ceil((cur.offsetTop + lineHeight - box.clientHeight) / lineHeight) * lineHeight;
+        }
       }
     }
   }
@@ -873,7 +878,7 @@ class Component extends DCLogic {
       else if(cur.kind==='article'){ const elapsed=(Date.now()-cur.startTime)/1000; const left=Math.max(0,secs-elapsed); const el=this.timerRef.current; if(el) el.textContent=left.toFixed(1)+'s'; if(left<=0){ clearInterval(cur.timerInt); this.finishArticle(); } }
     },100);
   }
-  flashError(pos){ const area=this.typeAreaRef.current; if(!area) return; const sp=area.querySelectorAll('span')[pos]; if(sp){ sp.style.background='var(--color-accent-2-200)'; sp.style.color='var(--color-accent-2-800)'; setTimeout(()=>{ if(sp){ sp.style.background=''; sp.style.color=''; } },200); } }
+  flashError(pos){ const area=this.typeAreaRef.current; if(!area) return; const sp=area.querySelectorAll(':scope > span')[pos]; if(sp){ sp.style.background='var(--color-accent-2-200)'; sp.style.color='var(--color-accent-2-800)'; setTimeout(()=>{ if(sp){ sp.style.background=''; sp.style.color=''; } },200); } }
   onKey = async (e)=>{
     const a=this.s.active; if(!a || (a.kind!=='level' && a.kind!=='article')) return;
     if(e.key.length>1 && e.key!==' ' && e.key!=='Enter') return;
