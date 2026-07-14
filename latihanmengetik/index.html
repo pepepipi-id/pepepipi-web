@@ -376,7 +376,7 @@
     <p style="font-size:13px;color:var(--color-text-muted);margin:6px 0 18px;">Kemajuan seluruh pegawai. Klik nama untuk melihat tren.</p>
     <div style="overflow-x:auto;">
       <table class="table">
-        <thead><tr><th>Nama</th><th>Level selesai</th><th>WPM (tes 1 menit)</th><th>Akurasi</th><th>vs Target</th></tr></thead>
+        <thead><tr><th>Nama</th><th>Level selesai</th><th>Avg WPM (5x)</th><th>Avg Akurasi (5x)</th><th>vs Target</th></tr></thead>
         <tbody>
           <sc-for list="{{ dashRows }}" as="r" hint-placeholder-count="4">
             <tr>
@@ -777,8 +777,16 @@ class Component extends DCLogic {
 
   // ---------- users ----------
   usernameTaken(name, excludeId){ const n=name.trim().toLowerCase(); return this.users.some(u=>u.username.trim().toLowerCase()===n && u.id!==excludeId); }
+  checkSupervisorPin(){
+    if(!this.settings.supervisorPin){ alert('Set PIN supervisor dulu lewat "Buka dashboard" sebelum melakukan aksi ini.'); return false; }
+    const v=prompt('Masukkan PIN supervisor:');
+    if(v===null) return false;
+    if(v.trim()!==this.settings.supervisorPin){ alert('PIN salah.'); return false; }
+    return true;
+  }
   onNewUserKey = (e)=>{ if(e.key==='Enter') this.onCreateUser(); };
   onCreateUser = async ()=>{
+    if(!this.checkSupervisorPin()) return;
     const name = this.newUserRef.current ? this.newUserRef.current.value.trim() : '';
     this.accountError='';
     if(!name){ this.accountError='Nama tidak boleh kosong.'; this.rr(); return; }
@@ -807,6 +815,7 @@ class Component extends DCLogic {
   deleteUser = async (id)=>{
     const u=this.users.find(x=>x.id===id); if(!u) return;
     if(!confirm('Hapus pengguna "'+u.username+'" beserta progresnya?')) return;
+    if(!this.checkSupervisorPin()) return;
     this.users=this.users.filter(x=>x.id!==id); this.queueWrite('users.json', this.users); this.queueDelete('progress-'+id+'.json');
     delete this.progressByUser[id];
     if(id===this.myUserId){ this.myUserId=null; this.myUsername=''; localStorage.removeItem(this.MY_USER_ID_KEY); this.progress={history:[]}; }
@@ -815,7 +824,7 @@ class Component extends DCLogic {
   onSwitchUser = ()=>{ this.accountError=''; this.s.screen='users'; this.rr(); };
 
   // ---------- home navigation ----------
-  goHome = async ()=>{ this.s.screen='home'; this.s.active=null; await this.refreshLeaderboard('main'); this.rr(); };
+  goHome = async ()=>{ const a=this.s.active; if(a && a.timerInt) clearInterval(a.timerInt); this.s.screen='home'; this.s.active=null; await this.refreshLeaderboard('main'); this.rr(); };
   cancelActive = async ()=>{
     const a=this.s.active; if(a && a.timerInt) clearInterval(a.timerInt);
     this.s.active=null; await this.refreshLeaderboard('main'); this.rr();
@@ -860,6 +869,7 @@ class Component extends DCLogic {
   // ---------- levels / practice ----------
   startLevel = async (id)=>{
     const level=this.LEVELS.find(l=>l.id===id); if(!this.isUnlocked(level)) return;
+    const prev=this.s.active; if(prev && prev.timerInt) clearInterval(prev.timerInt);
     this.s.active = {kind:'level', level, text:this.genText(level), pos:0, errors:0, typed:0, startTime:null, elapsed:0, timerInt:null};
     await this.refreshLeaderboard('level', id);
     this.rr();
@@ -872,8 +882,8 @@ class Component extends DCLogic {
     const secs=this.articleSecs();
     const a=this.s.active;
     a.timerInt=setInterval(()=>{
-      const cur=this.s.active;
-      if(!cur){ clearInterval(a.timerInt); return; }
+      if(this.s.active!==a){ clearInterval(a.timerInt); return; }
+      const cur=a;
       if(cur.kind==='level'){ const el=this.timerRef.current; if(el) el.textContent=((Date.now()-cur.startTime)/1000).toFixed(1)+'s'; }
       else if(cur.kind==='article'){ const elapsed=(Date.now()-cur.startTime)/1000; const left=Math.max(0,secs-elapsed); const el=this.timerRef.current; if(el) el.textContent=left.toFixed(1)+'s'; if(left<=0){ clearInterval(cur.timerInt); this.finishArticle(); } }
     },100);
@@ -939,6 +949,7 @@ class Component extends DCLogic {
   onStartArticle = async ()=>{
     if(!this.articles.length) await this.ensureArticles();
     if(!this.articles.length) return;
+    const prev=this.s.active; if(prev && prev.timerInt) clearInterval(prev.timerInt);
     const a=this.articles[Math.floor(Math.random()*this.articles.length)];
     this.s.active = {kind:'article', article:a, text:a.text, pos:0, errors:0, typed:0, startTime:null, elapsed:0, timerInt:null, charResults:new Array(a.text.length).fill(null), lastKeyAt:null, rowStats:{}};
     await this.refreshLeaderboard('article');
@@ -971,8 +982,9 @@ class Component extends DCLogic {
     return this.users.map(u=>{
       const p=this.progressByUser[u.id] || {};
       const clears=this.LEVELS.filter(l=>p[l.id]).length;
-      const wpm=this.bestOverall(p);
-      const acc=Math.max(0,...this.LEVELS.map(l=>p[l.id]?p[l.id].bestAccuracy:0), p.articleTest?p.articleTest.bestAccuracy:0);
+      const hist=(p.history||[]).filter(h=>h.kind==='article').slice(-5);
+      const wpm=hist.length?Math.round(hist.reduce((s,h)=>s+h.wpm,0)/hist.length):0;
+      const acc=hist.length?Math.round(hist.reduce((s,h)=>s+h.acc,0)/hist.length):0;
       return {id:u.id, username:u.username, clears, wpm, acc, progress:p};
     });
   }
@@ -1022,7 +1034,7 @@ class Component extends DCLogic {
   onArticlesBack = ()=>{ this.accountError=''; this.s.screen='dashboard'; this.rr(); };
 
   // ---------- reset ----------
-  onReset = async ()=>{ if(confirm('Hapus semua progres pengguna ini?')){ this.progress={history:[]}; await this.saveProgress(); await this.goHome(); } };
+  onReset = async ()=>{ if(!confirm('Hapus semua progres pengguna ini?')) return; if(!this.checkSupervisorPin()) return; this.progress={history:[]}; await this.saveProgress(); await this.goHome(); };
 
   // ---------- seed (local fallback for preview / unsupported browsers) ----------
   seedArticles(){
