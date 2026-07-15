@@ -119,7 +119,7 @@
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;">
         <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent);">Ringkasan</div>
         <sc-if value="{{ hasScore }}" hint-placeholder-val="{{ false }}">
-          <span class="tag {{ ratingChipClass }}" style="font-size:12px;padding:4px 12px;">{{ ratingChip }}</span>
+          <span class="tag {{ ratingChipClass }}" style="font-size:16px;font-weight:700;padding:6px 16px;">{{ ratingChip }}</span>
         </sc-if>
       </div>
       <div style="font-family:var(--font-heading);font-weight:600;font-size:22px;line-height:1.2;margin:8px 0 6px;letter-spacing:-.01em;">{{ greetLine1 }}</div>
@@ -174,6 +174,10 @@
     <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
       <aside style="width:220px;flex:none;">
         <a onClick="{{ cancelActive }}" style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--color-brand-blue-hover);cursor:pointer;text-decoration:none;margin-bottom:14px;">&larr; Beranda</a>
+        <button onClick="{{ onOpenTutorial }}" style="{{ tutorialCardStyle }};margin-bottom:16px;width:100%;">
+          <div style="font-family:var(--font-heading);font-weight:600;font-size:14px;color:var(--color-text-dark);">Tutorial jari</div>
+          <div style="font-size:10.5px;color:var(--color-text-muted);margin-top:6px;">{{ tutorialCardRec }}</div>
+        </button>
         <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-text-muted);margin-bottom:10px;">Latihan Bertingkat</div>
         <div style="display:flex;flex-direction:column;gap:8px;">
           <sc-for list="{{ sideCards }}" as="l" hint-placeholder-count="5">
@@ -194,7 +198,6 @@
             </sc-if>
           </button>
         </div>
-        <div style="margin-top:16px;"><a onClick="{{ onOpenTutorial }}" style="font-size:11.5px;color:var(--color-text-muted);cursor:pointer;text-decoration:underline;">Tutorial jari</a></div>
       </aside>
 
       <div style="flex:1;min-width:280px;">
@@ -330,22 +333,36 @@
 
   <!-- ============ TUTORIAL ============ -->
   <sc-if value="{{ isTutorial }}" hint-placeholder-val="{{ false }}">
-  <section data-screen-label="Tutorial jari">
-    <h2 style="font-size:24px;margin:0 0 4px;">Tutorial jari</h2>
-    <p style="font-size:13px;color:var(--color-text-muted);margin:0 0 18px;">Pilih jari untuk melihat tombol yang jadi tanggung jawabnya.</p>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:16px;">
-      <sc-for list="{{ tutFingerButtons }}" as="f" hint-placeholder-count="9"><button onClick="{{ f.onPick }}" style="{{ f.style }}">{{ f.name }}</button></sc-for>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:5px;align-items:center;margin:8px 0;">
-      <sc-for list="{{ kbRows }}" as="row" hint-placeholder-count="4">
-        <div style="display:flex;gap:5px;">
-          <sc-for list="{{ row.keys }}" as="k" hint-placeholder-count="10"><div style="{{ k.style }}">{{ k.ch }}</div></sc-for>
-        </div>
-      </sc-for>
-      <div style="{{ kbSpaceStyle }}"></div>
-    </div>
-    <div style="text-align:center;font-family:'SF Mono',ui-monospace,Menlo,monospace;font-size:15px;letter-spacing:3px;margin-top:10px;color:var(--color-text-dark);">{{ tutFingerKeys }}</div>
-    <div style="display:flex;justify-content:center;margin-top:18px;"><button class="btn btn-primary" onClick="{{ onTutBack }}">Kembali</button></div>
+  <section data-screen-label="Tutorial jari" style="max-width:520px;">
+    <sc-if value="{{ tutDone }}" hint-placeholder-val="{{ false }}">
+      <div style="background:var(--color-surface);border-radius:10px;padding:30px;text-align:center;">
+        <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent);margin-bottom:6px;">Selesai</div>
+        <h2 style="font-size:24px;margin:0 0 10px;">Tutorial jari selesai!</h2>
+        <p style="font-size:13.5px;color:var(--color-text-muted);margin:0 0 18px;">Kamu sudah mengenal semua baris dan jari. Badge "Tutorial jari" sudah didapat.</p>
+        <button class="btn btn-primary" onClick="{{ onTutBack }}">Kembali ke beranda</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ tutRunning }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+        <h2 style="font-size:22px;margin:0;">{{ tutLessonLabel }}</h2>
+        <span style="font-size:12px;color:var(--color-text-muted);">{{ tutLessonProgress }}</span>
+      </div>
+      <p style="font-size:12.5px;color:var(--color-text-muted);margin:0 0 14px;">Ketik semua huruf berikut sampai selesai. Tidak ada batas waktu.</p>
+      <div ref="{{ typeAreaRef }}" onClick="{{ onFocusInput }}" style="font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace;font-size:22px;line-height:1.9;padding:20px;background:var(--color-surface);border-radius:10px;text-align:center;letter-spacing:2px;cursor:text;white-space:normal;overflow-wrap:break-word;">
+        <sc-for list="{{ charList }}" as="c" hint-placeholder-count="12"><span style="{{ c.style }}">{{ c.ch }}</span></sc-for>
+      </div>
+      <div style="text-align:center;margin-top:10px;font-size:12.5px;color:var(--color-text-muted);">Jari berikutnya: <b style="color:var(--color-text-dark);">{{ tutFingerNext }}</b></div>
+      <div style="display:flex;flex-direction:column;gap:5px;align-items:center;margin:18px 0;">
+        <sc-for list="{{ kbRows }}" as="row" hint-placeholder-count="4">
+          <div style="display:flex;gap:5px;">
+            <sc-for list="{{ row.keys }}" as="k" hint-placeholder-count="10"><div style="{{ k.style }}">{{ k.ch }}</div></sc-for>
+          </div>
+        </sc-for>
+        <div style="{{ kbSpaceStyle }}"></div>
+      </div>
+      <input ref="{{ inputRef }}" onKeyDown="{{ onTutKey }}" onBlur="{{ onTutInputBlur }}" style="position:absolute;opacity:0;pointer-events:none;height:0;width:0;" />
+      <div style="display:flex;justify-content:center;margin-top:14px;"><button class="btn btn-secondary" onClick="{{ onTutBack }}">Batalkan</button></div>
+    </sc-if>
   </section>
   </sc-if>
 
@@ -460,7 +477,9 @@
 
   </main>
 
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ false }}">
   <div style="text-align:center;margin-top:36px;"><a onClick="{{ onReset }}" style="font-size:11px;color:var(--color-text-muted);cursor:pointer;text-decoration:underline;">Reset semua progres pengguna ini</a></div>
+  </sc-if>
  </div>
 </div>
 </x-dc>
@@ -472,7 +491,6 @@ class Component extends DCLogic {
   SHEETS_TOKEN = '1T53ACB11z3IFcVSL9pnfwGxBk76WC5u';
   users = []; articles = []; settings = {}; progress = {}; progressByUser = {};
   myUserId = null; myUsername = '';
-  tutorialFinger = 'lp';
   accountError = ''; pinError = '';
   inputRef = React.createRef();
   timerRef = React.createRef();
@@ -508,6 +526,9 @@ class Component extends DCLogic {
   componentDidUpdate(){
     const act = this.s.active;
     if (act && (act.kind==='level' || act.kind==='article') && this.inputRef.current) {
+      this.inputRef.current.focus();
+    }
+    if (this.s.screen==='tutorial' && this.s.tut && !this.s.tut.done && this.inputRef.current) {
       this.inputRef.current.focus();
     }
     if (act && act.kind==='article' && this.typeAreaRef.current && this.typeAreaRef.current.clientHeight > 0) {
@@ -963,9 +984,40 @@ class Component extends DCLogic {
   }
 
   // ---------- tutorial ----------
-  onOpenTutorial = ()=>{ this.tutorialFinger='lp'; this.s.screen='tutorial'; this.rr(); };
-  pickFinger = (f)=>{ this.tutorialFinger=f; this.rr(); };
-  onTutBack = async ()=>{ await this.goHome(); };
+  buildTutorialLessons(){
+    const rowLabels=['Baris angka','Baris atas','Baris tengah (home row)','Baris bawah'];
+    const lessons=this.KEY_ROWS.map((row,i)=>({label:rowLabels[i], chars:row.join('')}));
+    this.FINGER_ORDER.forEach(f=>{
+      const keys=this.fingerKeysList(f).map(k=>k==='spasi'?' ':k);
+      lessons.push({label:'Jari: '+this.FINGER_NAMES[f], chars:keys.join('')});
+    });
+    const combined=this.KEY_ROWS[1].concat(this.KEY_ROWS[2]).concat(this.KEY_ROWS[3]).join('');
+    lessons.push({label:'Gabungan baris & jari', chars:combined});
+    return lessons;
+  }
+  onOpenTutorial = ()=>{ this.s.tut={lessons:this.buildTutorialLessons(), li:0, pos:0, done:false}; this.s.screen='tutorial'; this.rr(); };
+  onTutKey = async (e)=>{
+    const t=this.s.tut; if(!t || t.done) return;
+    if(e.key.length>1 && e.key!==' ' && e.key!=='Enter') return;
+    e.preventDefault();
+    const lesson=t.lessons[t.li];
+    const expected=lesson.chars[t.pos];
+    const pressed=e.key==='Enter'?'\n':e.key;
+    if(pressed===expected){
+      t.pos++;
+      if(t.pos>=lesson.chars.length){
+        if(t.li>=t.lessons.length-1){
+          t.done=true;
+          if(!this.progress.tutorialDone){ this.progress.tutorialDone=true; await this.saveProgress(); }
+        } else { t.li++; t.pos=0; }
+      }
+      this.rr();
+    } else {
+      this.flashError(t.pos);
+    }
+  };
+  onTutInputBlur = ()=>{ setTimeout(()=>{ if(this.s.screen==='tutorial' && this.s.tut && !this.s.tut.done && this.inputRef.current) this.inputRef.current.focus(); },10); };
+  onTutBack = async ()=>{ this.s.tut=null; await this.goHome(); };
 
   // ---------- article test ----------
   onStartArticle = async ()=>{
@@ -1083,7 +1135,7 @@ class Component extends DCLogic {
     V.onCreateUser=this.onCreateUser; V.onNewUserKey=this.onNewUserKey; V.onOpenDashGate=this.onOpenDashGate; V.onSwitchUser=this.onSwitchUser;
     V.onOpenTutorial=this.onOpenTutorial;
     V.retryLevel=this.retryLevel; V.gotoNextLevel=this.gotoNextLevel; V.cancelActive=this.cancelActive; V.retryArticle=this.retryArticle;
-    V.onTutBack=this.onTutBack;
+    V.onTutBack=this.onTutBack; V.onTutKey=this.onTutKey; V.onTutInputBlur=this.onTutInputBlur;
     V.onKey=this.onKey; V.onInputBlur=this.onInputBlur; V.onFocusInput=this.onFocusInput;
     V.onPinSubmit=this.onPinSubmit; V.onPinBack=this.onPinBack; V.onPinKey=this.onPinKey;
     V.onDashBack=this.onDashBack; V.onDashSetGoal=this.onDashSetGoal; V.onDashManageArticles=this.onDashManageArticles; V.onDashExport=this.onDashExport;
@@ -1141,6 +1193,8 @@ class Component extends DCLogic {
       V.articleCardRec=this.progress.articleTest ? (this.progress.articleTest.bestWpm+' WPM · '+this.progress.articleTest.bestAccuracy+'%') : 'Belum dicoba';
       V.articleLockNote=articleUnlocked?'':('Selesaikan semua level dulu ('+cleared+'/'+this.LEVELS.length+')');
       V.onArticleCardOpen=articleUnlocked?this.onStartArticle:(()=>{});
+      V.tutorialCardStyle=this.sideCardStyle(true,false);
+      V.tutorialCardRec=this.progress.tutorialDone?'✓ Selesai':'Belum dicoba';
 
       // badges
       const anyAcc100=this.LEVELS.some(l=>this.progress[l.id]&&this.progress[l.id].bestAccuracy>=100);
@@ -1153,7 +1207,8 @@ class Component extends DCLogic {
         {label:'Akurasi 100%', earned:anyAcc100},
         {label:'40 WPM', earned:bo>=40},
         {label:'60 WPM', earned:bo>=60},
-        {label:'Tes 1 menit', earned:!!this.progress.articleTest}
+        {label:'Tes 1 menit', earned:!!this.progress.articleTest},
+        {label:'Tutorial jari', earned:!!this.progress.tutorialDone}
       ];
       V.badges=badgeDefs.map(b=>({
         label:(b.earned?'✓ ':'')+b.label,
@@ -1223,6 +1278,7 @@ class Component extends DCLogic {
       V.hasScore=false; V.greetLine1=''; V.greetLine2=''; V.ratingChip=''; V.ratingChipClass='tag-neutral'; V.benchMarkerStyle='left:0%'; V.benchMarkerLabel=''; V.benchTicks=[];
       V.goalWpm=this.settings.goalWpm||50; V.goalLine=''; V.goalBarStyle='width:0%';
       V.sideCards=[]; V.articleDisabled=true; V.articleCardStyle=''; V.articleCardRec=''; V.articleLockNote=''; V.onArticleCardOpen=(()=>{});
+      V.tutorialCardStyle=''; V.tutorialCardRec='';
       V.badges=[];
       V.boardIsMain=false; V.boardIsLevel=false; V.boardIsArticle=false; V.boardLevelName=''; V.mainBoardRows=[]; V.mainBoardEmpty=false; V.levelBoardRows=[]; V.levelBoardEmpty=false; V.articleOwn=''; V.articleTop='';
       V.isIdle=true; V.isActiveLevel=false; V.isActiveArticle=false; V.isLevelResult=false; V.isArticleResult=false;
@@ -1233,10 +1289,19 @@ class Component extends DCLogic {
 
     // tutorial (shares kbRows)
     if(scr==='tutorial'){
-      V.tutFingerButtons=this.FINGER_ORDER.map(f=>{ const pair=this.FINGER_COLOR[f]; const sel=f===this.tutorialFinger; return {name:this.FINGER_NAMES[f], onPick:()=>this.pickFinger(f), style:'border:none;border-radius:6px;padding:9px 12px;font-family:var(--font-body);font-size:12px;font-weight:600;cursor:pointer;background:'+pair[0]+';color:'+pair[1]+';'+(sel?'outline:2px solid var(--color-text-dark);transform:scale(1.04);':'opacity:.6;')}; });
-      const kb=this.buildKb(null, this.tutorialFinger); V.kbRows=kb.rows; V.kbSpaceStyle=kb.spaceStyle;
-      V.tutFingerKeys=this.fingerKeysList(this.tutorialFinger).join('   ');
-    } else if(scr!=='home'){ V.tutFingerButtons=[]; V.tutFingerKeys=''; V.kbRows=V.kbRows||[]; V.kbSpaceStyle=V.kbSpaceStyle||''; }
+      const t=s.tut;
+      V.tutDone=!!(t && t.done);
+      V.tutRunning=!!(t && !t.done);
+      if(V.tutRunning){
+        const lesson=t.lessons[t.li];
+        V.tutLessonLabel=lesson.label;
+        V.tutLessonProgress='Langkah '+(t.li+1)+' / '+t.lessons.length;
+        V.charList=this.buildCharList(lesson.chars, t.pos);
+        const nc=lesson.chars[t.pos]; const fg=this.FINGER_MAP[nc];
+        V.tutFingerNext=fg?this.FINGER_NAMES[fg]:'';
+        const kb=this.buildKb(nc, null); V.kbRows=kb.rows; V.kbSpaceStyle=kb.spaceStyle;
+      } else if(!V.tutDone){ V.tutLessonLabel=''; V.tutLessonProgress=''; V.charList=[]; V.tutFingerNext=''; V.kbRows=[]; V.kbSpaceStyle=''; }
+    } else if(scr!=='home'){ V.tutDone=false; V.tutRunning=false; V.tutLessonLabel=''; V.tutLessonProgress=''; V.tutFingerNext=''; V.kbRows=V.kbRows||[]; V.kbSpaceStyle=V.kbSpaceStyle||''; }
 
     // pin
     V.pinMode=s.pinMode||'set';
