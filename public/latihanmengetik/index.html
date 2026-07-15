@@ -839,6 +839,7 @@ class Component extends DCLogic {
   };
   renameUser = async (id)=>{
     const u=this.users.find(x=>x.id===id); if(!u) return;
+    if(!this.checkSupervisorPin()) return;
     const next=prompt('Nama baru:', u.username); if(next===null) return;
     const t=next.trim(); this.accountError='';
     if(!t){ this.accountError='Nama tidak boleh kosong.'; this.rr(); return; }
