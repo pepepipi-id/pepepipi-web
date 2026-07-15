@@ -626,6 +626,16 @@ class Component extends DCLogic {
       return !!j.ok;
     }catch(e){ return false; }
   }
+  // Atomic server-side action (read-modify-write under a lock), used for shared
+  // collections (users/settings/articles) so two PCs writing near-simultaneously
+  // can't overwrite each other's change with a stale local array.
+  async sheetsAction(action, payload){
+    try{
+      const res=await fetch(this.SHEETS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify(Object.assign({ token:this.SHEETS_TOKEN, action }, payload)) });
+      return await res.json();
+    }catch(e){ return {ok:false}; }
+  }
 
   // ---------- local cache (one full-sheet pull, everything else reads/writes local) ----------
   loadCacheFromLocal(){
@@ -785,10 +795,9 @@ class Component extends DCLogic {
 
   async ensureArticles(){
     if (this.articles && this.articles.length) return this.articles;
-    const arr = this.seedArticles();
-    this.articles = arr;
-    this.queueWrite('articles.json', arr);
-    return arr;
+    const resp = await this.sheetsAction('seedArticlesIfEmpty', {seed:this.seedArticles()});
+    if (resp.ok) this.articles = resp.articles;
+    return this.articles;
   }
 
   // ---------- helpers ----------
@@ -864,9 +873,10 @@ class Component extends DCLogic {
     if(pw===null) return;
     if(pw.trim().length<4){ this.accountError='Password minimal 4 karakter.'; this.rr(); return; }
     const id = (crypto.randomUUID?crypto.randomUUID():'u'+Date.now());
-    this.users.push({id, username:name, password:pw.trim(), createdAt:Date.now()});
+    const resp = await this.sheetsAction('upsertUser', {id, username:name, password:pw.trim(), createdAt:Date.now()});
+    if(!resp.ok){ this.accountError=resp.error || 'Gagal menyimpan ke server, coba lagi.'; this.rr(); return; }
+    this.users = resp.users;
     this.progressByUser[id] = {history:[]};
-    this.queueWrite('users.json', this.users);
     this.queueWrite('progress-'+id+'.json', {history:[]});
     this.myUserId=id; this.myUsername=name; localStorage.setItem(this.MY_USER_ID_KEY, id);
     this.progress={history:[]}; await this.goHome();
@@ -882,7 +892,10 @@ class Component extends DCLogic {
       const pw=prompt('Akun ini belum punya password. Buat password sekarang (minimal 4 karakter):');
       if(pw===null) return;
       if(pw.trim().length<4){ this.accountError='Password minimal 4 karakter.'; this.rr(); return; }
-      u.password=pw.trim(); this.queueWrite('users.json', this.users);
+      const resp = await this.sheetsAction('upsertUser', {id:u.id, password:pw.trim()});
+      if(!resp.ok){ this.accountError=resp.error || 'Gagal menyimpan ke server, coba lagi.'; this.rr(); return; }
+      this.users = resp.users;
+      u.password = pw.trim();
     }
     this.myUserId=u.id; this.myUsername=u.username; localStorage.setItem(this.MY_USER_ID_KEY, u.id);
     this.loadMyProgress(); await this.goHome();
@@ -894,13 +907,18 @@ class Component extends DCLogic {
     const t=next.trim(); this.accountError='';
     if(!t){ this.accountError='Nama tidak boleh kosong.'; this.rr(); return; }
     if(this.usernameTaken(t,id)){ this.accountError='Nama sudah dipakai.'; this.rr(); return; }
-    u.username=t; this.queueWrite('users.json', this.users); if(id===this.myUserId) this.myUsername=t; this.rr();
+    const resp = await this.sheetsAction('upsertUser', {id, username:t});
+    if(!resp.ok){ this.accountError=resp.error || 'Gagal menyimpan ke server, coba lagi.'; this.rr(); return; }
+    this.users = resp.users;
+    if(id===this.myUserId) this.myUsername=t; this.rr();
   };
   deleteUser = async (id)=>{
     const u=this.users.find(x=>x.id===id); if(!u) return;
     if(!confirm('Hapus pengguna "'+u.username+'" beserta progresnya?')) return;
     if(!this.checkSupervisorPin()) return;
-    this.users=this.users.filter(x=>x.id!==id); this.queueWrite('users.json', this.users); this.queueDelete('progress-'+id+'.json');
+    const resp = await this.sheetsAction('deleteUser', {id});
+    if(!resp.ok){ alert('Gagal menyimpan ke server, coba lagi.'); return; }
+    this.users = resp.users;
     delete this.progressByUser[id];
     if(id===this.myUserId){ this.myUserId=null; this.myUsername=''; localStorage.removeItem(this.MY_USER_ID_KEY); this.progress={history:[]}; }
     this.rr();
@@ -910,7 +928,9 @@ class Component extends DCLogic {
     if(!this.checkSupervisorPin()) return;
     const pw=prompt('Password baru untuk "'+u.username+'" (minimal 4 karakter):'); if(pw===null) return;
     if(pw.trim().length<4){ alert('Password minimal 4 karakter.'); return; }
-    u.password=pw.trim(); this.queueWrite('users.json', this.users);
+    const resp = await this.sheetsAction('upsertUser', {id, password:pw.trim()});
+    if(!resp.ok){ alert('Gagal menyimpan ke server, coba lagi.'); return; }
+    this.users = resp.users;
   };
   onSwitchUser = ()=>{ this.accountError=''; this.s.screen='users'; this.rr(); };
 
@@ -1142,7 +1162,13 @@ class Component extends DCLogic {
   onPinBack = ()=>{ this.pinError=''; this.s.screen='users'; this.rr(); };
   onPinSubmit = async ()=>{
     const v=(this.pinRef.current && this.pinRef.current.value || '').trim();
-    if(this.s.pinMode==='set'){ if(v.length<4){ this.pinError='PIN minimal 4 digit.'; this.rr(); return; } this.settings.supervisorPin=v; await this.writeData('settings.json', this.settings); await this.openDashboard(); }
+    if(this.s.pinMode==='set'){
+      if(v.length<4){ this.pinError='PIN minimal 4 digit.'; this.rr(); return; }
+      const resp = await this.sheetsAction('patchSettings', {patch:{supervisorPin:v}});
+      if(!resp.ok){ this.pinError='Gagal menyimpan ke server, coba lagi.'; this.rr(); return; }
+      this.settings = resp.settings;
+      await this.openDashboard();
+    }
     else { if(v!==this.settings.supervisorPin){ this.pinError='PIN salah.'; this.rr(); return; } await this.openDashboard(); }
   };
   buildDashRows(){
@@ -1162,7 +1188,14 @@ class Component extends DCLogic {
     this.pullFromServer().then(()=>{ if(this.s.screen==='dashboard'){ this.s.dashRows=this.buildDashRows(); this.rr(); } });
   }
   onDashBack = ()=>{ this.s.screen='users'; this.rr(); };
-  onDashSetGoal = async ()=>{ const v=parseInt(this.goalRef.current && this.goalRef.current.value,10); if(!isNaN(v)&&v>0){ this.settings.goalWpm=v; await this.writeData('settings.json', this.settings); await this.openDashboard(); } };
+  onDashSetGoal = async ()=>{
+    const v=parseInt(this.goalRef.current && this.goalRef.current.value,10);
+    if(isNaN(v)||v<=0) return;
+    const resp = await this.sheetsAction('patchSettings', {patch:{goalWpm:v}});
+    if(!resp.ok){ alert('Gagal menyimpan ke server, coba lagi.'); return; }
+    this.settings = resp.settings;
+    await this.openDashboard();
+  };
   onDashManageArticles = ()=>{ this.accountError=''; this.s.screen='articles'; this.rr(); };
   onDashExport = ()=>{
     const header=['Nama', ...this.LEVELS.flatMap(l=>['Lv'+l.id+' Akurasi','Lv'+l.id+' Durasi']), 'Best WPM', 'Rata WPM (5 Tes Terakhir)', 'Rata Akurasi (5 Tes Terakhir)'];
@@ -1194,10 +1227,16 @@ class Component extends DCLogic {
     this.accountError='';
     if(!title||!text){ this.accountError='Judul dan isi tidak boleh kosong.'; this.rr(); return; }
     if(text.length<500){ this.accountError='Isi artikel minimal 500 karakter (sekitar 2 paragraf) supaya tes 1 menit tidak habis sebelum waktunya.'; this.rr(); return; }
-    this.articles.push({id:'a'+Date.now(), title, text});
-    await this.writeData('articles.json', this.articles); this.rr();
+    const resp = await this.sheetsAction('upsertArticle', {article:{id:'a'+Date.now(), title, text}});
+    if(!resp.ok){ this.accountError='Gagal menyimpan ke server, coba lagi.'; this.rr(); return; }
+    this.articles = resp.articles; this.rr();
   };
-  deleteArticle = async (id)=>{ if(!confirm('Hapus artikel ini?')) return; this.articles=this.articles.filter(a=>a.id!==id); await this.writeData('articles.json', this.articles); this.rr(); };
+  deleteArticle = async (id)=>{
+    if(!confirm('Hapus artikel ini?')) return;
+    const resp = await this.sheetsAction('deleteArticle', {id});
+    if(!resp.ok){ alert('Gagal menyimpan ke server, coba lagi.'); return; }
+    this.articles = resp.articles; this.rr();
+  };
   onArticlesBack = ()=>{ this.accountError=''; this.s.screen='dashboard'; this.rr(); };
 
   // ---------- reset ----------
