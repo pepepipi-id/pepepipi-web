@@ -87,6 +87,11 @@
   <!-- ============ USERS (pilih pengguna) ============ -->
   <sc-if value="{{ isUsers }}" hint-placeholder-val="{{ true }}">
   <section data-screen-label="Pilih pengguna">
+    <div onClick="{{ onStartPublicTest }}" style="cursor:pointer;background:var(--color-bg-blue-card);border:1px solid var(--color-border-blue-card);border-radius:10px;padding:16px 18px;margin-bottom:24px;text-align:center;">
+      <div style="font-family:var(--font-heading);font-weight:700;font-size:15px;color:var(--color-brand-blue-hover);text-decoration:underline;">MARI TES KATA PERMENIT MU DISINI</div>
+      <div style="font-size:11.5px;color:var(--color-text-muted);margin-top:4px;">Tes cepat 1 menit tanpa login — hasil tidak disimpan.</div>
+    </div>
+
     <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent);margin-bottom:6px;">Pilih Pengguna</div>
     <h2 style="font-size:28px;margin:0 0 4px;">Siapa yang berlatih?</h2>
     <p style="font-size:13px;color:var(--color-text-muted);margin:0 0 20px;">Pilih namamu untuk melanjutkan progres, atau buat pengguna baru.</p>
@@ -124,6 +129,55 @@
         <div style="font-size:13px;color:var(--color-text-muted);">Laporan kemajuan seluruh pegawai — terlindungi PIN.</div>
       </div>
       <button class="btn btn-secondary" onClick="{{ onOpenDashGate }}">Buka dashboard</button>
+    </div>
+  </section>
+  </sc-if>
+
+  <!-- ============ PUBLIC TEST (tes 1 menit tanpa login, tidak disimpan) ============ -->
+  <sc-if value="{{ isPublicActive }}" hint-placeholder-val="{{ false }}">
+  <section data-screen-label="Tes 1 Menit (publik)" style="max-width:640px;">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--color-text-muted);margin-bottom:10px;">
+      <span style="font-family:var(--font-heading);font-weight:600;color:var(--color-text-dark);">{{ pubTitle }}</span>
+      <span ref="{{ timerRef }}" style="font-variant-numeric:tabular-nums;font-size:15px;color:var(--color-brand-blue-hover);">{{ pubTimerInit }}</span>
+    </div>
+    <div ref="{{ typeAreaRef }}" onClick="{{ onFocusInput }}" style="position:relative;font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace;font-size:17px;line-height:1.9;padding:18px;background:var(--color-surface);border-radius:10px;text-align:left;cursor:text;white-space:pre-line;overflow-wrap:break-word;max-height:8.5em;overflow-y:auto;">
+      <sc-for list="{{ pubCharList }}" as="c" hint-placeholder-count="40"><span style="{{ c.style }}">{{ c.ch }}</span></sc-for>
+    </div>
+    <sc-if value="{{ pubIsEnterNext }}" hint-placeholder-val="{{ false }}">
+      <div style="text-align:center;margin-top:10px;"><span class="tag" style="background:var(--color-bg-orange-card);border:1px solid var(--color-border-orange-card);color:var(--color-text-dark);font-size:13px;font-weight:700;padding:5px 14px;">⏎ Tekan Enter — paragraf baru</span></div>
+    </sc-if>
+    <sc-if value="{{ pubIsEnterNext }}" hint-placeholder-val="{{ true }}">
+      <div style="text-align:center;margin-top:10px;font-size:12.5px;color:var(--color-text-muted);">Jari berikutnya: <b style="color:var(--color-text-dark);">{{ pubFingerNext }}</b></div>
+    </sc-if>
+    <input ref="{{ inputRef }}" onKeyDown="{{ onKey }}" onBlur="{{ onInputBlur }}" style="position:absolute;opacity:0;pointer-events:none;height:0;width:0;" />
+    <div style="display:flex;justify-content:center;margin-top:10px;margin-bottom:16px;"><button class="btn btn-secondary" onClick="{{ cancelPublicTest }}">Batalkan</button></div>
+  </section>
+  </sc-if>
+
+  <sc-if value="{{ isPublicResult }}" hint-placeholder-val="{{ false }}">
+  <section data-screen-label="Hasil Tes 1 Menit (publik)" style="max-width:640px;">
+    <div style="background:var(--color-surface);border-radius:10px;padding:22px;margin-bottom:16px;">
+      <div style="text-align:center;">
+        <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent);margin-bottom:6px;">Selesai</div>
+        <h2 style="font-size:24px;margin:0 0 6px;">Tes 1 menit selesai</h2>
+        <p style="font-size:13.5px;color:var(--color-text-muted);margin:0 auto 16px;max-width:440px;">Kecepatan kerjamu tergolong <b style="color:var(--color-text-dark);">{{ pubRatingLabel }}</b> — {{ pubBenchText }}.</p>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:420px;margin:0 auto 12px;">
+          <div style="background:var(--color-bg);border-radius:10px;padding:14px;"><div style="font-size:12px;color:var(--color-text-muted);">WPM</div><div style="font-family:var(--font-heading);font-weight:600;font-size:28px;">{{ pubWpm }}</div></div>
+          <div style="background:var(--color-bg);border-radius:10px;padding:14px;"><div style="font-size:12px;color:var(--color-text-muted);">Akurasi</div><div style="font-family:var(--font-heading);font-weight:600;font-size:28px;">{{ pubAcc }}%</div></div>
+          <div style="background:var(--color-bg);border-radius:10px;padding:14px;"><div style="font-size:12px;color:var(--color-text-muted);">Waktu</div><div style="font-family:var(--font-heading);font-weight:600;font-size:28px;">{{ pubTime }}</div></div>
+        </div>
+        <p style="font-size:11.5px;color:var(--color-text-muted);margin:0 0 12px;">Hasil ini tidak disimpan — cuma ditampilkan sekali.</p>
+        <sc-if value="{{ pubRecommend }}" hint-placeholder-val="">
+          <p style="font-size:12px;color:var(--color-accent);margin:0 0 12px;">{{ pubRecommend }}</p>
+        </sc-if>
+      </div>
+      <div style="font-family:'SF Mono',ui-monospace,Menlo,monospace;font-size:14px;line-height:1.8;background:var(--color-bg);border-radius:10px;padding:16px;text-align:left;margin:8px 0 16px;white-space:pre-line;overflow-wrap:break-word;max-height:8em;overflow-y:auto;">
+        <sc-for list="{{ pubHighlight }}" as="c" hint-placeholder-count="40"><span style="{{ c.style }}">{{ c.ch }}</span></sc-for>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+        <button class="btn btn-primary" onClick="{{ retryPublicTest }}">Coba lagi</button>
+        <button class="btn btn-secondary" onClick="{{ cancelPublicTest }}">Kembali ke pilih pengguna</button>
+      </div>
     </div>
   </section>
   </sc-if>
@@ -595,7 +649,8 @@ class Component extends DCLogic {
   // ---------- storage abstraction (Google Sheets via Apps Script) ----------
   CACHE_KEY = 'typing_local_cache_v1';
   MIN_SEND_INTERVAL_MS = 6000; // conservative floor under Sheets' ~60 write/min/user quota
-  pendingWrites = {}; // key -> {op:'write', value} | {op:'delete'}
+  MAX_FLUSH_RETRIES = 5; // stop hammering script.google.com forever if writes keep failing
+  pendingWrites = {}; // key -> {op:'write', value, retries?} | {op:'delete', retries?}
   flushTimer = null;
   lastFlushSentAt = 0;
   _pullPromise = null;
@@ -722,15 +777,18 @@ class Component extends DCLogic {
     const keys = Object.keys(batch);
     if (!keys.length) return;
     this.lastFlushSentAt = Date.now();
-    let anyFailed = false;
+    let anyFailed = false, anyGaveUp = false;
     await Promise.all(keys.map(async k=>{
       const entry = batch[k];
       const ok = entry.op==='delete' ? await this.sheetsDelete(k) : await this.sheetsWrite(k, entry.value);
       if (!ok) {
+        const retries = (entry.retries||0) + 1;
+        if (retries > this.MAX_FLUSH_RETRIES) { anyGaveUp = true; return; } // give up on this key instead of retrying forever
         anyFailed = true;
-        if (!(k in this.pendingWrites)) this.pendingWrites[k] = entry; // don't clobber a newer edit queued meanwhile
+        if (!(k in this.pendingWrites)) this.pendingWrites[k] = Object.assign({}, entry, { retries }); // don't clobber a newer edit queued meanwhile
       }
     }));
+    if (anyGaveUp) { this.syncWarning = 'Gagal sinkron sebagian data ke server setelah beberapa percobaan — coba muat ulang halaman.'; this.rr(); }
     if (anyFailed) this.scheduleFlush();
   }
   flushWritesBeacon(){
@@ -1149,12 +1207,34 @@ class Component extends DCLogic {
     const elapsed=a.startTime?Math.min(secs,(Date.now()-a.startTime)/1000):0;
     const wpm=elapsed>0?Math.round((a.pos/5)/(elapsed/60)):0;
     const acc=a.typed>0?Math.round(((a.typed-a.errors)/a.typed)*100):100;
-    await this.recordResult('articleTest','article',wpm,acc);
     const recommendedFinger=this.recommendFinger(a.fingerStats);
+    if(a.isPublic){
+      // Publik/tanpa login: cuma hitung & tampilkan, jangan pernah simpan ke progress/cache/Sheets.
+      this.s.active={kind:'article-result', article:a.article, wpm, acc, time:elapsed, charResults:a.charResults, text:a.text, recommendedFinger, isPublic:true};
+      this.rr();
+      return;
+    }
+    await this.recordResult('articleTest','article',wpm,acc);
     this.s.active={kind:'article-result', article:a.article, wpm, acc, time:elapsed, charResults:a.charResults, text:a.text, recommendedFinger};
     await this.refreshLeaderboard('article');
     this.rr();
   }
+
+  // ---------- public test (tanpa login, dari layar pilih pengguna, tidak pernah disimpan) ----------
+  onStartPublicTest = async ()=>{
+    if(!this.articles.length) await this.ensureArticles();
+    if(!this.articles.length) return;
+    const prev=this.s.active; if(prev && prev.timerInt) clearInterval(prev.timerInt);
+    const a=this.articles[Math.floor(Math.random()*this.articles.length)];
+    this.s.active = {kind:'article', article:a, text:a.text, pos:0, errors:0, typed:0, startTime:null, elapsed:0, timerInt:null, charResults:new Array(a.text.length).fill(null), lastKeyAt:null, fingerStats:{}, isPublic:true};
+    this.s.screen='public';
+    this.rr();
+  };
+  retryPublicTest = ()=>{ this.onStartPublicTest(); };
+  cancelPublicTest = ()=>{
+    const a=this.s.active; if(a && a.timerInt) clearInterval(a.timerInt);
+    this.s.active=null; this.s.screen='users'; this.rr();
+  };
 
   // ---------- pin / dashboard ----------
   onOpenDashGate = ()=>{ this.pinError=''; this.s.pinMode = this.settings.supervisorPin ? 'enter' : 'set'; this.s.screen='pin'; this.rr(); };
@@ -1267,6 +1347,7 @@ class Component extends DCLogic {
     V.onCreateUser=this.onCreateUser; V.onNewUserKey=this.onNewUserKey; V.onOpenDashGate=this.onOpenDashGate; V.onSwitchUser=this.onSwitchUser;
     V.onOpenTutorial=this.onOpenTutorial;
     V.retryLevel=this.retryLevel; V.gotoNextLevel=this.gotoNextLevel; V.cancelActive=this.cancelActive; V.retryArticle=this.retryArticle;
+    V.onStartPublicTest=this.onStartPublicTest; V.cancelPublicTest=this.cancelPublicTest; V.retryPublicTest=this.retryPublicTest;
     V.onTutBack=this.onTutBack; V.onTutKey=this.onTutKey; V.onTutInputBlur=this.onTutInputBlur;
     V.onTutNextLesson=this.onTutNextLesson; V.toggleComboMode=this.toggleComboMode; V.startComboPractice=this.startComboPractice;
     V.onKey=this.onKey; V.onInputBlur=this.onInputBlur; V.onFocusInput=this.onFocusInput;
@@ -1278,6 +1359,28 @@ class Component extends DCLogic {
     V.isPin=scr==='pin'; V.isDashboard=scr==='dashboard'; V.isTrends=scr==='trends'; V.isArticles=scr==='articles';
     V.isBooting=scr==='boot'; V.isBootError=scr==='bootError'; V.onRetryBoot=this.onRetryBoot;
     V.syncWarning=this.syncWarning;
+
+    // public test (tanpa login) — dihitung lepas dari cabang scr==='home' di bawah,
+    // karena ini gak boleh ikut menampilkan dashboard/progress milik user yang login.
+    V.isPublic=scr==='public';
+    V.isPublicActive=V.isPublic && !!act && act.kind==='article';
+    V.isPublicResult=V.isPublic && !!act && act.kind==='article-result';
+    if(V.isPublicActive){
+      V.pubTitle='Tes 1 menit: '+act.article.title;
+      V.pubTimerInit=this.articleSecs().toFixed(1)+'s';
+      V.pubCharList=this.buildArticleCharList(act.text, act.charResults, act.pos);
+      const anc=act.text[act.pos];
+      V.pubIsEnterNext=anc==='\n';
+      const afg=anc?this.FINGER_MAP[anc]:null;
+      V.pubFingerNext=afg?this.FINGER_NAMES[afg]:'';
+    } else { V.pubTitle=''; V.pubTimerInit=''; V.pubCharList=[]; V.pubIsEnterNext=false; V.pubFingerNext=''; }
+    if(V.isPublicResult){
+      V.pubWpm=act.wpm; V.pubAcc=act.acc; V.pubTime=act.time.toFixed(1)+'s';
+      V.pubRatingLabel=this.ratingLabel(act.wpm); V.pubBenchText=this.benchmarkText(act.wpm);
+      V.pubHighlight=this.buildArticleCharList(act.text, act.charResults, -1);
+      const rf=act.recommendedFinger;
+      V.pubRecommend=rf?('Coba latih jari '+rf.name+' dulu — akurasi '+rf.acc+'% & jeda rata-rata '+rf.avgDelayMs+'ms.'):'';
+    } else { V.pubWpm=0; V.pubAcc=0; V.pubTime=''; V.pubRatingLabel=''; V.pubBenchText=''; V.pubHighlight=[]; V.pubRecommend=''; }
 
     // users
     V.userRows=this.users.map(u=>({id:u.id, username:u.username, onPick:()=>this.pickUser(u.id), onRename:()=>this.renameUser(u.id), onResetPassword:()=>this.resetUserPassword(u.id), onDelete:()=>this.deleteUser(u.id)}));
@@ -1363,7 +1466,6 @@ class Component extends DCLogic {
       V.levelBoardEmpty=board.mode==='level' && board.rows.length===0;
       V.articleOwn=(board.mode==='article' && board.own) ? (board.own.wpm+' WPM · '+board.own.acc+'%') : 'Belum ada rekor';
       V.articleTop=(board.mode==='article' && board.top) ? (board.top.username+' — '+board.top.wpm+' WPM · '+board.top.acc+'%') : 'Belum ada data';
-      console.log('[board-debug]', {mode:board.mode, boardRowsLen:(board.rows||[]).length, mainBoardRowsLen:V.mainBoardRows.length, usersLen:this.users.length, progressByUserKeys:Object.keys(this.progressByUser)});
 
       // active typing area
       V.isIdle=!act;
