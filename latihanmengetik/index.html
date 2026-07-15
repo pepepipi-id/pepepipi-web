@@ -314,7 +314,9 @@
                 <div style="background:var(--color-bg);border-radius:10px;padding:14px;"><div style="font-size:12px;color:var(--color-text-muted);">Waktu</div><div style="font-family:var(--font-heading);font-weight:600;font-size:28px;">{{ arTime }}</div></div>
               </div>
               <sc-if value="{{ arRecordLine }}" hint-placeholder-val=""><p style="font-size:12px;color:var(--color-text-muted);margin:0 0 12px;">{{ arRecordLine }}</p></sc-if>
-              <sc-if value="{{ arRecommend }}" hint-placeholder-val=""><p style="font-size:12px;color:var(--color-accent);margin:0 0 12px;">{{ arRecommend }}</p></sc-if>
+              <sc-if value="{{ arRecommend }}" hint-placeholder-val="">
+                <button onClick="{{ onOpenRecommendedTutorial }}" style="background:none;border:none;padding:0;margin:0 0 12px;font-size:12px;color:var(--color-accent);cursor:pointer;text-decoration:underline;">{{ arRecommend }}</button>
+              </sc-if>
             </div>
             <div style="font-family:'SF Mono',ui-monospace,Menlo,monospace;font-size:14px;line-height:1.8;background:var(--color-bg);border-radius:10px;padding:16px;text-align:left;margin:8px 0 16px;white-space:pre-line;overflow-wrap:break-word;max-height:8em;overflow-y:auto;">
               <sc-for list="{{ arHighlight }}" as="c" hint-placeholder-count="40"><span style="{{ c.style }}">{{ c.ch }}</span></sc-for>
@@ -764,24 +766,25 @@ class Component extends DCLogic {
   }
   articleSecs(){ return this.props.articleTestSeconds ?? 60; }
   charLevelId(ch){ const lc=ch.toLowerCase(); const lvl=this.LEVELS.find(l=>l.chars.includes(lc)); return lvl?lvl.id:null; }
-  // Skor "paling lemah" per baris keyboard dari statistik transient rowStats (dihitung
+  // Skor "paling lemah" per jari dari statistik transient fingerStats (dihitung
   // ulang tiap tes, tidak pernah disimpan) — dipakai buat rekomendasi, bukan penilaian resmi.
-  recommendLevel(rowStats){
-    const ids=Object.keys(rowStats).map(Number).filter(id=>rowStats[id].count>=5);
-    if(!ids.length) return null;
-    const overallAvgDelay=ids.reduce((s,id)=>s+rowStats[id].totalDelay,0)/ids.reduce((s,id)=>s+rowStats[id].count,0);
+  // Per jari (bukan per baris) karena satu baris dipakai banyak jari berbeda sekaligus,
+  // jadi skor per baris mengaburkan jari mana yang sebenarnya lemah.
+  recommendFinger(fingerStats){
+    const fingers=Object.keys(fingerStats).filter(f=>fingerStats[f].count>=5);
+    if(!fingers.length) return null;
+    const overallAvgDelay=fingers.reduce((s,f)=>s+fingerStats[f].totalDelay,0)/fingers.reduce((s,f)=>s+fingerStats[f].count,0);
     let best=null, bestScore=-1;
-    ids.forEach(id=>{
-      const r=rowStats[id];
+    fingers.forEach(f=>{
+      const r=fingerStats[f];
       const errorRate=r.errors/r.count;
       const avgDelay=r.totalDelay/r.count;
       const normDelay=overallAvgDelay>0?Math.min(2,avgDelay/overallAvgDelay):0;
       const score=errorRate*0.6+Math.max(0,normDelay-1)*0.4;
-      if(score>bestScore){ bestScore=score; best={id, errorRate, avgDelay}; }
+      if(score>bestScore){ bestScore=score; best={finger:f, errorRate, avgDelay}; }
     });
     if(!best || bestScore<=0) return null;
-    const lvl=this.LEVELS.find(l=>l.id===best.id);
-    return { id:lvl.id, name:lvl.name, acc:Math.round((1-best.errorRate)*100), avgDelayMs:Math.round(best.avgDelay) };
+    return { finger:best.finger, name:this.FINGER_NAMES[best.finger], acc:Math.round((1-best.errorRate)*100), avgDelayMs:Math.round(best.avgDelay) };
   }
   bestOverall(prog){ prog=prog||this.progress; return prog.articleTest ? (prog.articleTest.bestWpm||0) : 0; }
   medalRank(i){ return i===0?'🥇':i===1?'🥈':i===2?'🥉':String(i+1); }
@@ -950,10 +953,10 @@ class Component extends DCLogic {
       const now=Date.now();
       const delay=a.lastKeyAt!=null?now-a.lastKeyAt:0;
       a.lastKeyAt=now;
-      const rowId=this.charLevelId(expected);
-      if(rowId!=null){ const rs=a.rowStats[rowId]||(a.rowStats[rowId]={count:0,errors:0,totalDelay:0}); rs.count++; rs.totalDelay+=delay; }
+      const fg=this.FINGER_MAP[expected];
+      if(fg!=null){ const rs=a.fingerStats[fg]||(a.fingerStats[fg]={count:0,errors:0,totalDelay:0}); rs.count++; rs.totalDelay+=delay; }
       if(pressed===expected){ if(a.charResults[a.pos]!=='wrong') a.charResults[a.pos]='correct'; a.pos++; if(a.pos>=a.text.length){ return this.finishArticle(); } this.rr(); }
-      else { a.errors++; a.charResults[a.pos]='wrong'; if(rowId!=null) a.rowStats[rowId].errors++; this.flashError(a.pos); this.rr(); }
+      else { a.errors++; a.charResults[a.pos]='wrong'; if(fg!=null) a.fingerStats[fg].errors++; this.flashError(a.pos); this.rr(); }
     }
   };
   async recordResult(key, kind, a, b){
@@ -1026,6 +1029,14 @@ class Component extends DCLogic {
   };
   onTutInputBlur = ()=>{ setTimeout(()=>{ if(this.s.screen==='tutorial' && this.s.tut && this.inputRef.current) this.inputRef.current.focus(); },10); };
   onTutBack = async ()=>{ this.s.tut=null; await this.goHome(); };
+  onOpenRecommendedTutorial = ()=>{
+    const act=this.s.active; const rf=act && act.recommendedFinger; if(!rf) return;
+    const lessons=this.buildTutorialLessons();
+    const li=lessons.findIndex(l=>l.label==='Jari: '+rf.name);
+    this.s.tut={lessons, li:li>=0?li:0, pos:0};
+    this.s.screen='tutorial';
+    this.rr();
+  };
 
   // ---------- article test ----------
   onStartArticle = async ()=>{
@@ -1033,7 +1044,7 @@ class Component extends DCLogic {
     if(!this.articles.length) return;
     const prev=this.s.active; if(prev && prev.timerInt) clearInterval(prev.timerInt);
     const a=this.articles[Math.floor(Math.random()*this.articles.length)];
-    this.s.active = {kind:'article', article:a, text:a.text, pos:0, errors:0, typed:0, startTime:null, elapsed:0, timerInt:null, charResults:new Array(a.text.length).fill(null), lastKeyAt:null, rowStats:{}};
+    this.s.active = {kind:'article', article:a, text:a.text, pos:0, errors:0, typed:0, startTime:null, elapsed:0, timerInt:null, charResults:new Array(a.text.length).fill(null), lastKeyAt:null, fingerStats:{}};
     await this.refreshLeaderboard('article');
     this.rr();
   };
@@ -1045,8 +1056,8 @@ class Component extends DCLogic {
     const wpm=elapsed>0?Math.round((a.pos/5)/(elapsed/60)):0;
     const acc=a.typed>0?Math.round(((a.typed-a.errors)/a.typed)*100):100;
     await this.recordResult('articleTest','article',wpm,acc);
-    const recommendedLevel=this.recommendLevel(a.rowStats);
-    this.s.active={kind:'article-result', article:a.article, wpm, acc, time:elapsed, charResults:a.charResults, text:a.text, recommendedLevel};
+    const recommendedFinger=this.recommendFinger(a.fingerStats);
+    this.s.active={kind:'article-result', article:a.article, wpm, acc, time:elapsed, charResults:a.charResults, text:a.text, recommendedFinger};
     await this.refreshLeaderboard('article');
     this.rr();
   }
@@ -1284,9 +1295,10 @@ class Component extends DCLogic {
         const rec=this.progress.articleTest;
         V.arRecordLine=rec?('Rekor kamu: '+rec.bestWpm+' WPM · '+rec.bestAccuracy+'%'):'';
         V.arHighlight=this.buildArticleCharList(act.text, act.charResults, -1);
-        const rl=act.recommendedLevel;
-        V.arRecommend=rl?('Coba latih Level '+rl.id+' ('+rl.name+') dulu — akurasi '+rl.acc+'% & jeda rata-rata '+rl.avgDelayMs+'ms di baris ini.'):'';
-      } else { V.arWpm=0; V.arAcc=0; V.arTime=''; V.arRatingLabel=''; V.arBenchText=''; V.arRecordLine=''; V.arHighlight=[]; V.arRecommend=''; }
+        const rf=act.recommendedFinger;
+        V.arRecommend=rf?('Coba latih jari '+rf.name+' dulu — akurasi '+rf.acc+'% & jeda rata-rata '+rf.avgDelayMs+'ms.'):'';
+        V.onOpenRecommendedTutorial=this.onOpenRecommendedTutorial;
+      } else { V.arWpm=0; V.arAcc=0; V.arTime=''; V.arRatingLabel=''; V.arBenchText=''; V.arRecordLine=''; V.arHighlight=[]; V.arRecommend=''; V.onOpenRecommendedTutorial=(()=>{}); }
     } else {
       V.hasScore=false; V.greetLine1=''; V.greetLine2=''; V.ratingChip=''; V.ratingChipClass='tag-neutral'; V.benchMarkerStyle='left:0%'; V.benchMarkerLabel=''; V.benchTicks=[];
       V.goalWpm=this.settings.goalWpm||50; V.goalLine=''; V.goalBarStyle='width:0%';
@@ -1297,7 +1309,7 @@ class Component extends DCLogic {
       V.isIdle=true; V.isActiveLevel=false; V.isActiveArticle=false; V.isLevelResult=false; V.isArticleResult=false;
       V.pTitle=''; V.pRecordLine=''; V.pFingerName=''; V.aTitle=''; V.aTimerInit=''; V.aRecordLine=''; V.charList=[]; V.kbRows=[]; V.kbSpaceStyle=''; V.showKeyboard=true; V.aIsEnterNext=false; V.aFingerNext='';
       V.rTitle=''; V.rAcc=0; V.rTime=''; V.rRecordLine=''; V.rUnlockNote=''; V.rHasNext=false; V.rNoNext=true; V.rNextLabel='';
-      V.arWpm=0; V.arAcc=0; V.arTime=''; V.arRatingLabel=''; V.arBenchText=''; V.arRecordLine=''; V.arHighlight=[]; V.arRecommend='';
+      V.arWpm=0; V.arAcc=0; V.arTime=''; V.arRatingLabel=''; V.arBenchText=''; V.arRecordLine=''; V.arHighlight=[]; V.arRecommend=''; V.onOpenRecommendedTutorial=(()=>{});
     }
 
     // tutorial (shares kbRows)
