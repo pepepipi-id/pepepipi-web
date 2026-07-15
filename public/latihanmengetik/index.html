@@ -258,9 +258,15 @@
             <span style="font-family:var(--font-heading);font-weight:600;color:var(--color-text-dark);">{{ aTitle }}</span>
             <span ref="{{ timerRef }}" style="font-variant-numeric:tabular-nums;font-size:15px;color:var(--color-brand-blue-hover);">{{ aTimerInit }}</span>
           </div>
-          <div ref="{{ typeAreaRef }}" onClick="{{ onFocusInput }}" style="position:relative;font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace;font-size:17px;line-height:1.9;padding:18px;background:var(--color-surface);border-radius:10px;text-align:left;cursor:text;white-space:pre-line;overflow-wrap:break-word;max-height:8.5em;overflow-y:auto;scroll-behavior:smooth;">
+          <div ref="{{ typeAreaRef }}" onClick="{{ onFocusInput }}" style="position:relative;font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace;font-size:17px;line-height:1.9;padding:18px;background:var(--color-surface);border-radius:10px;text-align:left;cursor:text;white-space:pre-line;overflow-wrap:break-word;max-height:8.5em;overflow-y:auto;">
             <sc-for list="{{ charList }}" as="c" hint-placeholder-count="40"><span style="{{ c.style }}">{{ c.ch }}</span></sc-for>
           </div>
+          <sc-if value="{{ aIsEnterNext }}" hint-placeholder-val="{{ false }}">
+            <div style="text-align:center;margin-top:10px;"><span class="tag" style="background:var(--color-bg-orange-card);border:1px solid var(--color-border-orange-card);color:var(--color-text-dark);font-size:13px;font-weight:700;padding:5px 14px;">⏎ Tekan Enter — paragraf baru</span></div>
+          </sc-if>
+          <sc-if value="{{ aIsEnterNext }}" hint-placeholder-val="{{ true }}">
+            <div style="text-align:center;margin-top:10px;font-size:12.5px;color:var(--color-text-muted);">Jari berikutnya: <b style="color:var(--color-text-dark);">{{ aFingerNext }}</b></div>
+          </sc-if>
           <input ref="{{ inputRef }}" onKeyDown="{{ onKey }}" onBlur="{{ onInputBlur }}" style="position:absolute;opacity:0;pointer-events:none;height:0;width:0;" />
           <div style="display:flex;justify-content:center;margin-top:10px;margin-bottom:16px;"><button class="btn btn-secondary" onClick="{{ cancelActive }}">Batalkan</button></div>
         </sc-if>
@@ -1256,7 +1262,11 @@ class Component extends DCLogic {
         const rec=this.progress.articleTest;
         V.aRecordLine=rec?('Rekor: '+rec.bestWpm+' WPM · '+rec.bestAccuracy+'%'):'Belum ada rekor tes 1 menit';
         V.charList=this.buildArticleCharList(act.text, act.charResults, act.pos);
-      } else if(!V.isActiveLevel) { V.aTitle=''; V.aTimerInit=''; V.aRecordLine=''; V.charList=[]; V.kbRows=[]; V.kbSpaceStyle=''; V.showKeyboard=true; }
+        const anc=act.text[act.pos];
+        V.aIsEnterNext=anc==='\n';
+        const afg=anc?this.FINGER_MAP[anc]:null;
+        V.aFingerNext=afg?this.FINGER_NAMES[afg]:'';
+      } else if(!V.isActiveLevel) { V.aTitle=''; V.aTimerInit=''; V.aRecordLine=''; V.charList=[]; V.kbRows=[]; V.kbSpaceStyle=''; V.showKeyboard=true; V.aIsEnterNext=false; V.aFingerNext=''; }
 
       if(V.isLevelResult){
         V.rTitle='Level '+act.level.id+' selesai';
@@ -1285,7 +1295,7 @@ class Component extends DCLogic {
       V.badges=[];
       V.boardIsMain=false; V.boardIsLevel=false; V.boardIsArticle=false; V.boardLevelName=''; V.mainBoardRows=[]; V.mainBoardEmpty=false; V.levelBoardRows=[]; V.levelBoardEmpty=false; V.articleOwn=''; V.articleTop='';
       V.isIdle=true; V.isActiveLevel=false; V.isActiveArticle=false; V.isLevelResult=false; V.isArticleResult=false;
-      V.pTitle=''; V.pRecordLine=''; V.pFingerName=''; V.aTitle=''; V.aTimerInit=''; V.aRecordLine=''; V.charList=[]; V.kbRows=[]; V.kbSpaceStyle=''; V.showKeyboard=true;
+      V.pTitle=''; V.pRecordLine=''; V.pFingerName=''; V.aTitle=''; V.aTimerInit=''; V.aRecordLine=''; V.charList=[]; V.kbRows=[]; V.kbSpaceStyle=''; V.showKeyboard=true; V.aIsEnterNext=false; V.aFingerNext='';
       V.rTitle=''; V.rAcc=0; V.rTime=''; V.rRecordLine=''; V.rUnlockNote=''; V.rHasNext=false; V.rNoNext=true; V.rNextLabel='';
       V.arWpm=0; V.arAcc=0; V.arTime=''; V.arRatingLabel=''; V.arBenchText=''; V.arRecordLine=''; V.arHighlight=[]; V.arRecommend='';
     }
