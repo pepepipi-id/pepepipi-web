@@ -333,36 +333,33 @@
 
   <!-- ============ TUTORIAL ============ -->
   <sc-if value="{{ isTutorial }}" hint-placeholder-val="{{ false }}">
-  <section data-screen-label="Tutorial jari" style="max-width:520px;">
-    <sc-if value="{{ tutDone }}" hint-placeholder-val="{{ false }}">
-      <div style="background:var(--color-surface);border-radius:10px;padding:30px;text-align:center;">
-        <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent);margin-bottom:6px;">Selesai</div>
-        <h2 style="font-size:24px;margin:0 0 10px;">Tutorial jari selesai!</h2>
-        <p style="font-size:13.5px;color:var(--color-text-muted);margin:0 0 18px;">Kamu sudah mengenal semua baris dan jari. Badge "Tutorial jari" sudah didapat.</p>
-        <button class="btn btn-primary" onClick="{{ onTutBack }}">Kembali ke beranda</button>
-      </div>
+  <section data-screen-label="Tutorial jari" style="max-width:560px;">
+    <sc-if value="{{ tutAllDone }}" hint-placeholder-val="{{ false }}">
+      <div style="background:var(--color-bg-orange-card);border:1px solid var(--color-border-orange-card);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12.5px;color:var(--color-text-dark);text-align:center;">✓ Semua bagian sudah pernah diselesaikan — badge "Tutorial jari" didapat. Klik bagian mana pun buat mengulang.</div>
     </sc-if>
-    <sc-if value="{{ tutRunning }}" hint-placeholder-val="{{ true }}">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
-        <h2 style="font-size:22px;margin:0;">{{ tutLessonLabel }}</h2>
-        <span style="font-size:12px;color:var(--color-text-muted);">{{ tutLessonProgress }}</span>
-      </div>
-      <p style="font-size:12.5px;color:var(--color-text-muted);margin:0 0 14px;">Ketik semua huruf berikut sampai selesai. Tidak ada batas waktu.</p>
-      <div ref="{{ typeAreaRef }}" onClick="{{ onFocusInput }}" style="font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace;font-size:22px;line-height:1.9;padding:20px;background:var(--color-surface);border-radius:10px;text-align:center;letter-spacing:2px;cursor:text;white-space:normal;overflow-wrap:break-word;">
-        <sc-for list="{{ charList }}" as="c" hint-placeholder-count="12"><span style="{{ c.style }}">{{ c.ch }}</span></sc-for>
-      </div>
-      <div style="text-align:center;margin-top:10px;font-size:12.5px;color:var(--color-text-muted);">Jari berikutnya: <b style="color:var(--color-text-dark);">{{ tutFingerNext }}</b></div>
-      <div style="display:flex;flex-direction:column;gap:5px;align-items:center;margin:18px 0;">
-        <sc-for list="{{ kbRows }}" as="row" hint-placeholder-count="4">
-          <div style="display:flex;gap:5px;">
-            <sc-for list="{{ row.keys }}" as="k" hint-placeholder-count="10"><div style="{{ k.style }}">{{ k.ch }}</div></sc-for>
-          </div>
-        </sc-for>
-        <div style="{{ kbSpaceStyle }}"></div>
-      </div>
-      <input ref="{{ inputRef }}" onKeyDown="{{ onTutKey }}" onBlur="{{ onTutInputBlur }}" style="position:absolute;opacity:0;pointer-events:none;height:0;width:0;" />
-      <div style="display:flex;justify-content:center;margin-top:14px;"><button class="btn btn-secondary" onClick="{{ onTutBack }}">Batalkan</button></div>
-    </sc-if>
+    <p style="font-size:11px;color:var(--color-text-muted);margin:0 0 8px;">Pilih bagian buat mulai atau mengulang:</p>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;">
+      <sc-for list="{{ tutLessons }}" as="l" hint-placeholder-count="14"><button onClick="{{ l.onPick }}" style="{{ l.style }}">{{ l.label }}</button></sc-for>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+      <h2 style="font-size:22px;margin:0;">{{ tutLessonLabel }}</h2>
+      <span style="font-size:12px;color:var(--color-text-muted);">{{ tutLessonProgress }}</span>
+    </div>
+    <p style="font-size:12.5px;color:var(--color-text-muted);margin:0 0 14px;">Ketik semua huruf berikut sampai selesai. Tidak ada batas waktu.</p>
+    <div ref="{{ typeAreaRef }}" onClick="{{ onFocusInput }}" style="font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace;font-size:22px;line-height:1.9;padding:20px;background:var(--color-surface);border-radius:10px;text-align:center;letter-spacing:2px;cursor:text;white-space:normal;overflow-wrap:break-word;">
+      <sc-for list="{{ charList }}" as="c" hint-placeholder-count="12"><span style="{{ c.style }}">{{ c.ch }}</span></sc-for>
+    </div>
+    <div style="text-align:center;margin-top:10px;font-size:12.5px;color:var(--color-text-muted);">Jari berikutnya: <b style="color:var(--color-text-dark);">{{ tutFingerNext }}</b></div>
+    <div style="display:flex;flex-direction:column;gap:5px;align-items:center;margin:18px 0;">
+      <sc-for list="{{ kbRows }}" as="row" hint-placeholder-count="4">
+        <div style="display:flex;gap:5px;">
+          <sc-for list="{{ row.keys }}" as="k" hint-placeholder-count="10"><div style="{{ k.style }}">{{ k.ch }}</div></sc-for>
+        </div>
+      </sc-for>
+      <div style="{{ kbSpaceStyle }}"></div>
+    </div>
+    <input ref="{{ inputRef }}" onKeyDown="{{ onTutKey }}" onBlur="{{ onTutInputBlur }}" style="position:absolute;opacity:0;pointer-events:none;height:0;width:0;" />
+    <div style="display:flex;justify-content:center;margin-top:14px;"><button class="btn btn-secondary" onClick="{{ onTutBack }}">Kembali ke beranda</button></div>
   </section>
   </sc-if>
 
@@ -528,7 +525,7 @@ class Component extends DCLogic {
     if (act && (act.kind==='level' || act.kind==='article') && this.inputRef.current) {
       this.inputRef.current.focus();
     }
-    if (this.s.screen==='tutorial' && this.s.tut && !this.s.tut.done && this.inputRef.current) {
+    if (this.s.screen==='tutorial' && this.s.tut && this.inputRef.current) {
       this.inputRef.current.focus();
     }
     if (act && act.kind==='article' && this.typeAreaRef.current && this.typeAreaRef.current.clientHeight > 0) {
@@ -995,9 +992,10 @@ class Component extends DCLogic {
     lessons.push({label:'Gabungan baris & jari', chars:combined});
     return lessons;
   }
-  onOpenTutorial = ()=>{ this.s.tut={lessons:this.buildTutorialLessons(), li:0, pos:0, done:false}; this.s.screen='tutorial'; this.rr(); };
+  onOpenTutorial = ()=>{ this.s.tut={lessons:this.buildTutorialLessons(), li:0, pos:0}; this.s.screen='tutorial'; this.rr(); };
+  pickTutorialLesson = (li)=>{ const t=this.s.tut; if(!t) return; t.li=li; t.pos=0; this.rr(); };
   onTutKey = async (e)=>{
-    const t=this.s.tut; if(!t || t.done) return;
+    const t=this.s.tut; if(!t) return;
     if(e.key.length>1 && e.key!==' ' && e.key!=='Enter') return;
     e.preventDefault();
     const lesson=t.lessons[t.li];
@@ -1006,17 +1004,20 @@ class Component extends DCLogic {
     if(pressed===expected){
       t.pos++;
       if(t.pos>=lesson.chars.length){
-        if(t.li>=t.lessons.length-1){
-          t.done=true;
-          if(!this.progress.tutorialDone){ this.progress.tutorialDone=true; await this.saveProgress(); }
-        } else { t.li++; t.pos=0; }
+        this.progress.tutorialLessons=this.progress.tutorialLessons||{};
+        this.progress.tutorialLessons[lesson.label]=true;
+        const allDone=t.lessons.every(l=>this.progress.tutorialLessons[l.label]);
+        if(allDone) this.progress.tutorialDone=true;
+        await this.saveProgress();
+        t.pos=0;
+        if(t.li<t.lessons.length-1) t.li++;
       }
       this.rr();
     } else {
       this.flashError(t.pos);
     }
   };
-  onTutInputBlur = ()=>{ setTimeout(()=>{ if(this.s.screen==='tutorial' && this.s.tut && !this.s.tut.done && this.inputRef.current) this.inputRef.current.focus(); },10); };
+  onTutInputBlur = ()=>{ setTimeout(()=>{ if(this.s.screen==='tutorial' && this.s.tut && this.inputRef.current) this.inputRef.current.focus(); },10); };
   onTutBack = async ()=>{ this.s.tut=null; await this.goHome(); };
 
   // ---------- article test ----------
@@ -1194,7 +1195,8 @@ class Component extends DCLogic {
       V.articleLockNote=articleUnlocked?'':('Selesaikan semua level dulu ('+cleared+'/'+this.LEVELS.length+')');
       V.onArticleCardOpen=articleUnlocked?this.onStartArticle:(()=>{});
       V.tutorialCardStyle=this.sideCardStyle(true,false);
-      V.tutorialCardRec=this.progress.tutorialDone?'✓ Selesai':'Belum dicoba';
+      { const doneCount=this.progress.tutorialLessons?Object.keys(this.progress.tutorialLessons).length:0;
+        V.tutorialCardRec=this.progress.tutorialDone?'✓ Selesai (bisa diulang)':(doneCount>0?(doneCount+'/14 bagian'):'Belum dicoba'); }
 
       // badges
       const anyAcc100=this.LEVELS.some(l=>this.progress[l.id]&&this.progress[l.id].bestAccuracy>=100);
@@ -1290,9 +1292,8 @@ class Component extends DCLogic {
     // tutorial (shares kbRows)
     if(scr==='tutorial'){
       const t=s.tut;
-      V.tutDone=!!(t && t.done);
-      V.tutRunning=!!(t && !t.done);
-      if(V.tutRunning){
+      if(t){
+        const doneMap=this.progress.tutorialLessons||{};
         const lesson=t.lessons[t.li];
         V.tutLessonLabel=lesson.label;
         V.tutLessonProgress='Langkah '+(t.li+1)+' / '+t.lessons.length;
@@ -1300,8 +1301,17 @@ class Component extends DCLogic {
         const nc=lesson.chars[t.pos]; const fg=this.FINGER_MAP[nc];
         V.tutFingerNext=fg?this.FINGER_NAMES[fg]:'';
         const kb=this.buildKb(nc, null); V.kbRows=kb.rows; V.kbSpaceStyle=kb.spaceStyle;
-      } else if(!V.tutDone){ V.tutLessonLabel=''; V.tutLessonProgress=''; V.charList=[]; V.tutFingerNext=''; V.kbRows=[]; V.kbSpaceStyle=''; }
-    } else if(scr!=='home'){ V.tutDone=false; V.tutRunning=false; V.tutLessonLabel=''; V.tutLessonProgress=''; V.tutFingerNext=''; V.kbRows=V.kbRows||[]; V.kbSpaceStyle=V.kbSpaceStyle||''; }
+        V.tutLessons=t.lessons.map((l,i)=>{
+          const active=i===t.li; const done=!!doneMap[l.label];
+          let style='border:none;border-radius:6px;padding:8px 12px;font-family:var(--font-body);font-size:12px;font-weight:600;cursor:pointer;';
+          style += active ? 'background:var(--color-brand-blue);color:#fff;' : (done ? 'background:var(--color-bg-orange-card);color:var(--color-text-dark);border:1px solid var(--color-border-orange-card);' : 'background:var(--color-bg);color:var(--color-text-muted);border:1px solid var(--color-divider);');
+          return { label:(done?'✓ ':'')+l.label, style, onPick:()=>this.pickTutorialLesson(i) };
+        });
+        V.tutAllDone=t.lessons.every(l=>doneMap[l.label]);
+      } else {
+        V.tutLessonLabel=''; V.tutLessonProgress=''; V.charList=[]; V.tutFingerNext=''; V.kbRows=[]; V.kbSpaceStyle=''; V.tutLessons=[]; V.tutAllDone=false;
+      }
+    } else if(scr!=='home'){ V.tutLessonLabel=''; V.tutLessonProgress=''; V.tutFingerNext=''; V.kbRows=V.kbRows||[]; V.kbSpaceStyle=V.kbSpaceStyle||''; V.tutLessons=[]; V.tutAllDone=false; }
 
     // pin
     V.pinMode=s.pinMode||'set';
