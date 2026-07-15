@@ -814,6 +814,7 @@ class Component extends DCLogic {
     const hadLocalCache = this.loadCacheFromLocal();
     window.addEventListener('beforeunload', ()=>this.flushWritesBeacon());
     document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='hidden') this.flushWritesBeacon(); });
+    window.addEventListener('popstate', this.onPopState);
     if (hadLocalCache) {
       if (!this.articles.length) await this.ensureArticles();
       await this.resume();
@@ -1221,20 +1222,30 @@ class Component extends DCLogic {
   }
 
   // ---------- public test (tanpa login, dari layar pilih pengguna, tidak pernah disimpan) ----------
+  // Back browser di-trap lewat History API supaya gak langsung tinggalin tab:
+  // masuk flow = 1x pushState, keluar flow (tombol ATAU tombol back fisik) selalu
+  // lewat history.back() -> onPopState -> _leavePublicTest, jadi gak ada history
+  // entry yang nyangkut nungguin dobel-back.
   onStartPublicTest = async ()=>{
     if(!this.articles.length) await this.ensureArticles();
     if(!this.articles.length) return;
     const prev=this.s.active; if(prev && prev.timerInt) clearInterval(prev.timerInt);
     const a=this.articles[Math.floor(Math.random()*this.articles.length)];
+    const enteringFresh = this.s.screen!=='public';
     this.s.active = {kind:'article', article:a, text:a.text, pos:0, errors:0, typed:0, startTime:null, elapsed:0, timerInt:null, charResults:new Array(a.text.length).fill(null), lastKeyAt:null, fingerStats:{}, isPublic:true};
     this.s.screen='public';
+    if(enteringFresh) history.pushState({dcPublicTest:true}, '', location.href);
     this.rr();
   };
   retryPublicTest = ()=>{ this.onStartPublicTest(); };
-  cancelPublicTest = ()=>{
+  _leavePublicTest = ()=>{
     const a=this.s.active; if(a && a.timerInt) clearInterval(a.timerInt);
     this.s.active=null; this.s.screen='users'; this.rr();
   };
+  cancelPublicTest = ()=>{
+    if(this.s.screen==='public') history.back(); else this._leavePublicTest();
+  };
+  onPopState = ()=>{ if(this.s.screen==='public') this._leavePublicTest(); };
 
   // ---------- pin / dashboard ----------
   onOpenDashGate = ()=>{ this.pinError=''; this.s.pinMode = this.settings.supervisorPin ? 'enter' : 'set'; this.s.screen='pin'; this.rr(); };
