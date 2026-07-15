@@ -343,30 +343,51 @@
   <sc-if value="{{ isTutorial }}" hint-placeholder-val="{{ false }}">
   <section data-screen-label="Tutorial jari" style="max-width:560px;">
     <sc-if value="{{ tutAllDone }}" hint-placeholder-val="{{ false }}">
-      <div style="background:var(--color-bg-orange-card);border:1px solid var(--color-border-orange-card);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12.5px;color:var(--color-text-dark);text-align:center;">✓ Semua bagian sudah pernah diselesaikan — badge "Tutorial jari" didapat. Klik bagian mana pun buat mengulang.</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;background:var(--color-bg-orange-card);border:1px solid var(--color-border-orange-card);border-radius:10px;padding:10px 14px;">
+        <span style="font-size:12.5px;color:var(--color-text-dark);">✓ Semua bagian sudah pernah diselesaikan.</span>
+        <button class="btn btn-secondary" onClick="{{ toggleComboMode }}" style="font-size:12px;padding:6px 12px;">{{ comboModeBtnLabel }}</button>
+      </div>
     </sc-if>
-    <p style="font-size:11px;color:var(--color-text-muted);margin:0 0 8px;">Pilih bagian buat mulai atau mengulang:</p>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;">
+    <sc-if value="{{ tutComboPicking }}" hint-placeholder-val="{{ false }}">
+      <p style="font-size:11.5px;color:var(--color-text-muted);margin:0 0 8px;">Pilih 2 bagian atau lebih buat latihan gabungan:</p>
+    </sc-if>
+    <sc-if value="{{ tutShowTyping }}" hint-placeholder-val="{{ true }}">
+      <p style="font-size:11px;color:var(--color-text-muted);margin:0 0 8px;">Pilih bagian buat mulai atau mengulang:</p>
+    </sc-if>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
       <sc-for list="{{ tutLessons }}" as="l" hint-placeholder-count="14"><button onClick="{{ l.onPick }}" style="{{ l.style }}">{{ l.label }}</button></sc-for>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
-      <h2 style="font-size:22px;margin:0;">{{ tutLessonLabel }}</h2>
-      <span style="font-size:12px;color:var(--color-text-muted);">{{ tutLessonProgress }}</span>
-    </div>
-    <p style="font-size:12.5px;color:var(--color-text-muted);margin:0 0 14px;">Ketik semua huruf berikut sampai selesai. Tidak ada batas waktu.</p>
-    <div ref="{{ typeAreaRef }}" onClick="{{ onFocusInput }}" style="font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace;font-size:22px;line-height:1.9;padding:20px;background:var(--color-surface);border-radius:10px;text-align:center;letter-spacing:2px;cursor:text;white-space:normal;overflow-wrap:break-word;">
-      <sc-for list="{{ charList }}" as="c" hint-placeholder-count="12"><span style="{{ c.style }}">{{ c.ch }}</span></sc-for>
-    </div>
-    <div style="text-align:center;margin-top:10px;font-size:12.5px;color:var(--color-text-muted);">Jari berikutnya: <b style="color:var(--color-text-dark);">{{ tutFingerNext }}</b></div>
-    <div style="display:flex;flex-direction:column;gap:5px;align-items:center;margin:18px 0;">
-      <sc-for list="{{ kbRows }}" as="row" hint-placeholder-count="4">
-        <div style="display:flex;gap:5px;">
-          <sc-for list="{{ row.keys }}" as="k" hint-placeholder-count="10"><div style="{{ k.style }}">{{ k.ch }}</div></sc-for>
-        </div>
-      </sc-for>
-      <div style="{{ kbSpaceStyle }}"></div>
-    </div>
-    <input ref="{{ inputRef }}" onKeyDown="{{ onTutKey }}" onBlur="{{ onTutInputBlur }}" style="position:absolute;opacity:0;pointer-events:none;height:0;width:0;" />
+    <sc-if value="{{ tutComboCanStart }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;justify-content:center;margin-bottom:16px;"><button class="btn btn-primary" onClick="{{ startComboPractice }}" style="font-size:12.5px;">Mulai latihan gabungan ({{ tutComboCount }})</button></div>
+    </sc-if>
+
+    <sc-if value="{{ tutShowTyping }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+        <h2 style="font-size:22px;margin:0;">{{ tutLessonLabel }}</h2>
+        <span style="font-size:12px;color:var(--color-text-muted);">{{ tutLessonSub }}</span>
+      </div>
+      <p style="font-size:12.5px;color:var(--color-text-muted);margin:0 0 14px;">Ketik semua huruf berikut sampai selesai. Tidak ada batas waktu.</p>
+      <div ref="{{ typeAreaRef }}" onClick="{{ onFocusInput }}" style="font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace;font-size:22px;line-height:1.9;padding:20px;background:var(--color-surface);border-radius:10px;text-align:center;letter-spacing:2px;cursor:text;white-space:normal;overflow-wrap:break-word;">
+        <sc-for list="{{ charList }}" as="c" hint-placeholder-count="12"><span style="{{ c.style }}">{{ c.ch }}</span></sc-for>
+      </div>
+      <div style="text-align:center;margin-top:10px;font-size:12.5px;color:var(--color-text-muted);">Jari berikutnya: <b style="color:var(--color-text-dark);">{{ tutFingerNext }}</b></div>
+      <sc-if value="{{ tutShowNextPrompt }}" hint-placeholder-val="{{ false }}">
+        <div style="text-align:center;margin-top:8px;"><button onClick="{{ onTutNextLesson }}" class="btn btn-secondary" style="font-size:12px;padding:6px 14px;">{{ tutNextPromptText }}</button></div>
+      </sc-if>
+      <sc-if value="{{ tutIsCombo }}" hint-placeholder-val="{{ false }}">
+        <div style="text-align:center;margin-top:8px;"><button onClick="{{ onTutBackToPicker }}" class="btn btn-secondary" style="font-size:12px;padding:6px 14px;">Selesai latihan gabungan</button></div>
+      </sc-if>
+      <div style="display:flex;flex-direction:column;gap:5px;align-items:center;margin:18px 0;">
+        <sc-for list="{{ kbRows }}" as="row" hint-placeholder-count="4">
+          <div style="display:flex;gap:5px;">
+            <sc-for list="{{ row.keys }}" as="k" hint-placeholder-count="10"><div style="{{ k.style }}">{{ k.ch }}</div></sc-for>
+          </div>
+        </sc-for>
+        <div style="{{ kbSpaceStyle }}"></div>
+      </div>
+      <input ref="{{ inputRef }}" onKeyDown="{{ onTutKey }}" onBlur="{{ onTutInputBlur }}" style="position:absolute;opacity:0;pointer-events:none;height:0;width:0;" />
+    </sc-if>
+
     <div style="display:flex;justify-content:center;margin-top:14px;"><button class="btn btn-secondary" onClick="{{ onTutBack }}">Kembali ke beranda</button></div>
   </section>
   </sc-if>
@@ -1002,25 +1023,57 @@ class Component extends DCLogic {
     lessons.push({label:'Gabungan baris & jari', chars:combined});
     return lessons;
   }
-  onOpenTutorial = ()=>{ this.s.tut={lessons:this.buildTutorialLessons(), li:0, pos:0}; this.s.screen='tutorial'; this.rr(); };
-  pickTutorialLesson = (li)=>{ const t=this.s.tut; if(!t) return; t.li=li; t.pos=0; this.rr(); };
+  genPoolText(chars){ const uniq=Array.from(new Set(chars.split(''))); return this.genText({chars:uniq}); }
+  onOpenTutorial = ()=>{
+    const lessons=this.buildTutorialLessons();
+    this.s.tut={lessons, li:0, phase:'seq', text:lessons[0].chars, pos:0, comboPicking:false, comboSel:[], comboPool:'', comboLabel:''};
+    this.s.screen='tutorial'; this.rr();
+  };
+  pickTutorialLesson = (li)=>{
+    const t=this.s.tut; if(!t) return;
+    if(t.comboPicking){ this.toggleComboSelect(li); return; }
+    t.li=li; t.phase='seq'; t.text=t.lessons[li].chars; t.pos=0;
+    this.rr();
+  };
+  toggleComboSelect = (li)=>{
+    const t=this.s.tut; if(!t) return;
+    const idx=t.comboSel.indexOf(li);
+    if(idx>=0) t.comboSel.splice(idx,1); else t.comboSel.push(li);
+    this.rr();
+  };
+  toggleComboMode = ()=>{ const t=this.s.tut; if(!t) return; t.comboPicking=!t.comboPicking; t.comboSel=[]; this.rr(); };
+  startComboPractice = ()=>{
+    const t=this.s.tut; if(!t || t.comboSel.length<2) return;
+    const pool=Array.from(new Set(t.comboSel.flatMap(i=>t.lessons[i].chars.split('')))).join('');
+    t.comboPool=pool;
+    t.comboLabel=t.comboSel.map(i=>t.lessons[i].label).join(' + ');
+    t.text=this.genPoolText(pool);
+    t.pos=0; t.phase='combo'; t.comboPicking=false;
+    this.rr();
+  };
+  onTutNextLesson = ()=>{ const t=this.s.tut; if(!t) return; if(t.li<t.lessons.length-1) this.pickTutorialLesson(t.li+1); };
   onTutKey = async (e)=>{
     const t=this.s.tut; if(!t) return;
     if(e.key.length>1 && e.key!==' ' && e.key!=='Enter') return;
     e.preventDefault();
-    const lesson=t.lessons[t.li];
-    const expected=lesson.chars[t.pos];
+    const expected=t.text[t.pos];
     const pressed=e.key==='Enter'?'\n':e.key;
     if(pressed===expected){
       t.pos++;
-      if(t.pos>=lesson.chars.length){
-        this.progress.tutorialLessons=this.progress.tutorialLessons||{};
-        this.progress.tutorialLessons[lesson.label]=true;
-        const allDone=t.lessons.every(l=>this.progress.tutorialLessons[l.label]);
-        if(allDone) this.progress.tutorialDone=true;
-        await this.saveProgress();
-        t.pos=0;
-        if(t.li<t.lessons.length-1) t.li++;
+      if(t.pos>=t.text.length){
+        if(t.phase==='seq'){
+          const lesson=t.lessons[t.li];
+          this.progress.tutorialLessons=this.progress.tutorialLessons||{};
+          this.progress.tutorialLessons[lesson.label]=true;
+          const allDone=t.lessons.every(l=>this.progress.tutorialLessons[l.label]);
+          if(allDone) this.progress.tutorialDone=true;
+          await this.saveProgress();
+          t.phase='random'; t.text=this.genPoolText(lesson.chars); t.pos=0;
+        } else if(t.phase==='random'){
+          t.text=this.genPoolText(t.lessons[t.li].chars); t.pos=0;
+        } else {
+          t.text=this.genPoolText(t.comboPool); t.pos=0;
+        }
       }
       this.rr();
     } else {
@@ -1033,7 +1086,8 @@ class Component extends DCLogic {
     const act=this.s.active; const rf=act && act.recommendedFinger; if(!rf) return;
     const lessons=this.buildTutorialLessons();
     const li=lessons.findIndex(l=>l.label==='Jari: '+rf.name);
-    this.s.tut={lessons, li:li>=0?li:0, pos:0};
+    const idx=li>=0?li:0;
+    this.s.tut={lessons, li:idx, phase:'seq', text:lessons[idx].chars, pos:0, comboPicking:false, comboSel:[], comboPool:'', comboLabel:''};
     this.s.screen='tutorial';
     this.rr();
   };
@@ -1155,6 +1209,7 @@ class Component extends DCLogic {
     V.onOpenTutorial=this.onOpenTutorial;
     V.retryLevel=this.retryLevel; V.gotoNextLevel=this.gotoNextLevel; V.cancelActive=this.cancelActive; V.retryArticle=this.retryArticle;
     V.onTutBack=this.onTutBack; V.onTutKey=this.onTutKey; V.onTutInputBlur=this.onTutInputBlur;
+    V.onTutNextLesson=this.onTutNextLesson; V.toggleComboMode=this.toggleComboMode; V.startComboPractice=this.startComboPractice;
     V.onKey=this.onKey; V.onInputBlur=this.onInputBlur; V.onFocusInput=this.onFocusInput;
     V.onPinSubmit=this.onPinSubmit; V.onPinBack=this.onPinBack; V.onPinKey=this.onPinKey;
     V.onDashBack=this.onDashBack; V.onDashSetGoal=this.onDashSetGoal; V.onDashManageArticles=this.onDashManageArticles; V.onDashExport=this.onDashExport;
@@ -1317,24 +1372,41 @@ class Component extends DCLogic {
       const t=s.tut;
       if(t){
         const doneMap=this.progress.tutorialLessons||{};
-        const lesson=t.lessons[t.li];
-        V.tutLessonLabel=lesson.label;
-        V.tutLessonProgress='Langkah '+(t.li+1)+' / '+t.lessons.length;
-        V.charList=this.buildCharList(lesson.chars, t.pos);
-        const nc=lesson.chars[t.pos]; const fg=this.FINGER_MAP[nc];
+        V.charList=this.buildCharList(t.text, t.pos);
+        const nc=t.text[t.pos]; const fg=this.FINGER_MAP[nc];
         V.tutFingerNext=fg?this.FINGER_NAMES[fg]:'';
         const kb=this.buildKb(nc, null); V.kbRows=kb.rows; V.kbSpaceStyle=kb.spaceStyle;
+
+        if(t.phase==='seq'){ V.tutLessonLabel=t.lessons[t.li].label; V.tutLessonSub='Latihan berurutan'; }
+        else if(t.phase==='random'){ V.tutLessonLabel=t.lessons[t.li].label; V.tutLessonSub='Latihan acak'; }
+        else { V.tutLessonLabel=t.comboLabel; V.tutLessonSub='Latihan acak gabungan'; }
+
+        V.tutShowNextPrompt=t.phase==='random' && t.li<t.lessons.length-1;
+        V.tutNextPromptText=V.tutShowNextPrompt?('✓ Bagian ini beres — Coba '+t.lessons[t.li+1].label):'';
+        V.tutIsCombo=t.phase==='combo';
+        V.tutComboPicking=t.comboPicking;
+        V.tutShowTyping=!t.comboPicking;
+        V.tutComboCanStart=t.comboSel.length>=2;
+        V.tutComboCount=t.comboSel.length;
+        V.comboModeBtnLabel=t.comboPicking?'Batal pilih':'Mode gabungan';
+        V.onTutBackToPicker=()=>this.pickTutorialLesson(t.li);
+
+        V.tutAllDone=t.lessons.every(l=>doneMap[l.label]);
         V.tutLessons=t.lessons.map((l,i)=>{
-          const active=i===t.li; const done=!!doneMap[l.label];
+          const done=!!doneMap[l.label];
+          const active=(t.comboPicking||t.phase==='combo')?t.comboSel.includes(i):i===t.li;
           let style='border:none;border-radius:6px;padding:8px 12px;font-family:var(--font-body);font-size:12px;font-weight:600;cursor:pointer;';
           style += active ? 'background:var(--color-brand-blue);color:#fff;' : (done ? 'background:var(--color-bg-orange-card);color:var(--color-text-dark);border:1px solid var(--color-border-orange-card);' : 'background:var(--color-bg);color:var(--color-text-muted);border:1px solid var(--color-divider);');
           return { label:(done?'✓ ':'')+l.label, style, onPick:()=>this.pickTutorialLesson(i) };
         });
-        V.tutAllDone=t.lessons.every(l=>doneMap[l.label]);
       } else {
-        V.tutLessonLabel=''; V.tutLessonProgress=''; V.charList=[]; V.tutFingerNext=''; V.kbRows=[]; V.kbSpaceStyle=''; V.tutLessons=[]; V.tutAllDone=false;
+        V.tutLessonLabel=''; V.tutLessonSub=''; V.charList=[]; V.tutFingerNext=''; V.kbRows=[]; V.kbSpaceStyle=''; V.tutLessons=[]; V.tutAllDone=false;
+        V.tutShowNextPrompt=false; V.tutNextPromptText=''; V.tutIsCombo=false; V.tutComboPicking=false; V.tutShowTyping=true; V.tutComboCanStart=false; V.tutComboCount=0; V.comboModeBtnLabel=''; V.onTutBackToPicker=(()=>{});
       }
-    } else if(scr!=='home'){ V.tutLessonLabel=''; V.tutLessonProgress=''; V.tutFingerNext=''; V.kbRows=V.kbRows||[]; V.kbSpaceStyle=V.kbSpaceStyle||''; V.tutLessons=[]; V.tutAllDone=false; }
+    } else if(scr!=='home'){
+      V.tutLessonLabel=''; V.tutLessonSub=''; V.tutFingerNext=''; V.kbRows=V.kbRows||[]; V.kbSpaceStyle=V.kbSpaceStyle||''; V.tutLessons=[]; V.tutAllDone=false;
+      V.tutShowNextPrompt=false; V.tutNextPromptText=''; V.tutIsCombo=false; V.tutComboPicking=false; V.tutShowTyping=true; V.tutComboCanStart=false; V.tutComboCount=0; V.comboModeBtnLabel=''; V.onTutBackToPicker=(()=>{});
+    }
 
     // pin
     V.pinMode=s.pinMode||'set';
