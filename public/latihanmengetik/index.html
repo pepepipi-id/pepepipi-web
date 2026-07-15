@@ -68,6 +68,22 @@
 
   <main>
 
+  <!-- ============ BOOT (memuat data awal) ============ -->
+  <sc-if value="{{ isBooting }}" hint-placeholder-val="{{ true }}">
+  <section data-screen-label="Memuat" style="max-width:420px;text-align:center;padding:40px 0;">
+    <p style="font-size:13.5px;color:var(--color-text-muted);">Memuat data…</p>
+  </section>
+  </sc-if>
+
+  <!-- ============ BOOT ERROR (gagal konek saat cold-boot) ============ -->
+  <sc-if value="{{ isBootError }}" hint-placeholder-val="{{ false }}">
+  <section data-screen-label="Gagal terhubung" style="max-width:420px;">
+    <h2 style="font-size:22px;margin:0 0 8px;">Gagal terhubung ke database</h2>
+    <p style="font-size:13.5px;color:var(--color-text-muted);margin:0 0 16px;line-height:1.55;">Tidak bisa memuat data dari server. Coba lagi — jangan paksa lanjut, supaya data lama/kosong tidak menimpa data asli.</p>
+    <button class="btn btn-primary" onClick="{{ onRetryBoot }}">Coba lagi</button>
+  </section>
+  </sc-if>
+
   <!-- ============ USERS (pilih pengguna) ============ -->
   <sc-if value="{{ isUsers }}" hint-placeholder-val="{{ true }}">
   <section data-screen-label="Pilih pengguna">
@@ -115,6 +131,9 @@
   <!-- ============ HOME (beranda) ============ -->
   <sc-if value="{{ isHome }}" hint-placeholder-val="{{ false }}">
   <section data-screen-label="Beranda">
+    <sc-if value="{{ syncWarning }}" hint-placeholder-val="">
+      <div style="background:var(--color-accent-2-100,#fdf1d6);border:1px solid var(--color-accent-2-700,#a3691a);color:var(--color-accent-2-700,#a3691a);border-radius:8px;padding:10px 14px;font-size:12.5px;margin-bottom:14px;">{{ syncWarning }}</div>
+    </sc-if>
     <div style="background:var(--color-surface);border-radius:10px;padding:20px 22px;box-shadow:var(--shadow-sm);margin-bottom:16px;">
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;">
         <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent);">Ringkasan</div>
@@ -517,7 +536,7 @@ class Component extends DCLogic {
   SHEETS_TOKEN = '1T53ACB11z3IFcVSL9pnfwGxBk76WC5u';
   users = []; articles = []; settings = {}; progress = {}; progressByUser = {};
   myUserId = null; myUsername = '';
-  accountError = ''; pinError = '';
+  accountError = ''; pinError = ''; syncWarning = ''; lastPullOk = null;
   inputRef = React.createRef();
   timerRef = React.createRef();
   typeAreaRef = React.createRef();
@@ -586,8 +605,8 @@ class Component extends DCLogic {
       const url=this.SHEETS_URL+'?token='+encodeURIComponent(this.SHEETS_TOKEN)+'&all=1&_ts='+Date.now();
       const res=await fetch(url, {cache:'no-store'}); const j=await res.json();
       console.log('[sheetsReadAll]', j.ok, j.ok ? Object.keys(j.items) : j.error);
-      return j.ok ? j.items : {};
-    }catch(e){ console.warn('[sheetsReadAll] fetch failed', e); return {}; }
+      return { ok: !!j.ok, items: j.ok ? j.items : {} };
+    }catch(e){ console.warn('[sheetsReadAll] fetch failed', e); return { ok:false, items:{} }; }
   }
   async sheetsWrite(name, obj){
     try{
@@ -659,11 +678,12 @@ class Component extends DCLogic {
   // periodic safety net) don't fire duplicate full-sheet requests.
   pullFromServer(){
     if (this._pullPromise) return this._pullPromise;
-    this._pullPromise = this.sheetsReadAll().then(items=>{
+    this._pullPromise = this.sheetsReadAll().then(res=>{
       this._pullPromise = null;
-      if (Object.keys(items).length) { this.applyRemoteSnapshot(items); this.applyPendingOverlay(); this.saveCacheToLocal(); }
-      return items;
-    }).catch(e=>{ this._pullPromise = null; return {}; });
+      this.lastPullOk = res.ok;
+      if (res.ok) { this.applyRemoteSnapshot(res.items); this.applyPendingOverlay(); this.saveCacheToLocal(); }
+      return res;
+    }).catch(e=>{ this._pullPromise = null; this.lastPullOk = false; return {ok:false, items:{}}; });
     return this._pullPromise;
   }
 
@@ -729,22 +749,22 @@ class Component extends DCLogic {
     if (hadLocalCache) {
       if (!this.articles.length) await this.ensureArticles();
       await this.resume();
-      this.pullFromServer().then(()=>{
-        if(!this.articles.length) this.ensureArticles();
+      this.pullFromServer().then(res=>{
+        this.syncWarning = res.ok ? '' : 'Gagal sinkron data terbaru — memakai data tersimpan di perangkat ini.';
+        if (res.ok && !this.articles.length) this.ensureArticles();
         if (this.myUserId) this.loadMyProgress();
         if (this.s.screen==='home') this.refreshLeaderboard(this.s.board.mode, this.s.board.key);
         this.rr();
       });
     } else {
-      await this.loadAll();
+      const res = await this.pullFromServer();
+      if (!res.ok) { this.s.screen='bootError'; this.rr(); return; }
+      await this.ensureArticles();
       await this.resume();
     }
   }
+  onRetryBoot = async ()=>{ this.s.screen='boot'; this.syncWarning=''; this.rr(); await this.boot(); };
 
-  async loadAll(){
-    await this.pullFromServer();
-    await this.ensureArticles();
-  }
   async resume(){
     this.myUserId = localStorage.getItem(this.MY_USER_ID_KEY);
     const u = this.users.find(x=>x.id===this.myUserId);
@@ -1217,6 +1237,8 @@ class Component extends DCLogic {
 
     V.isUsers=scr==='users'; V.isHome=scr==='home'; V.isTutorial=scr==='tutorial';
     V.isPin=scr==='pin'; V.isDashboard=scr==='dashboard'; V.isTrends=scr==='trends'; V.isArticles=scr==='articles';
+    V.isBooting=scr==='boot'; V.isBootError=scr==='bootError'; V.onRetryBoot=this.onRetryBoot;
+    V.syncWarning=this.syncWarning;
 
     // users
     V.userRows=this.users.map(u=>({id:u.id, username:u.username, onPick:()=>this.pickUser(u.id), onRename:()=>this.renameUser(u.id), onResetPassword:()=>this.resetUserPassword(u.id), onDelete:()=>this.deleteUser(u.id)}));
