@@ -1,34 +1,6 @@
-'use client'
-
-import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
 import TestimonialCard from './cards/TestimonialCard'
 
-export default function Testimoni({ includeDrafts = false }) {
-  const [testimonials, setTestimonials] = useState([])
-
-  useEffect(() => {
-    async function load() {
-      try {
-        let query = supabase.from('testimonials').select('*').limit(6)
-        if (!includeDrafts) query = query.eq('is_active', true)
-
-        const { data, error } = await query
-
-        if (error) {
-          console.error('Error Testimoni:', error)
-          return
-        }
-        setTestimonials(data || [])
-      } catch (error) {
-        console.error('Gagal memuat testimoni, tetapi web tetap aman tampil:', error)
-      }
-    }
-    load()
-  }, [includeDrafts])
-
-  if (testimonials.length === 0) return null
-
+export default function Testimoni({ testimonials }) {
   return (
     <section id="testimoni" className="max-w-6xl mx-auto px-4 py-12">
       <div className="mb-8">
