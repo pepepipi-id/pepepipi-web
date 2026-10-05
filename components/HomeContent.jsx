@@ -13,59 +13,49 @@ import CallToAction from './CallToAction'
 import MainFooter from './MainFooter'
 import StickyWaBar from './StickyWaBar'
 
+// Ambil semua data beranda sekali, paralel, lalu oper ke tiap section
+// (sebelumnya tiap section fetch ulang data yang sama).
+async function fetchRows(label, query) {
+  const { data, error } = await query
+  if (error) console.error(`Error ${label}:`, error)
+  return data || []
+}
+
 export default function HomeContent({ includeDrafts = false }) {
-  const [hasAktivitas, setHasAktivitas] = useState(true)
-  const [hasHampers, setHasHampers] = useState(true)
-  const [hasTestimoni, setHasTestimoni] = useState(true)
+  const [aktivitas, setAktivitas] = useState([])
+  const [hampers, setHampers] = useState([])
+  const [testimoni, setTestimoni] = useState([])
   const [hasSimulator, setHasSimulator] = useState(true)
 
   useEffect(() => {
+    let cancelled = false
+
+    const withDrafts = (query) => (includeDrafts ? query : query.eq('is_active', true))
+    const products = (kategori) =>
+      withDrafts(supabase.from('products').select('*').eq('kategori', kategori).limit(3))
+
     async function load() {
       try {
-        let aktivitasQuery = supabase.from('products').select('*').eq('kategori', 'Aktivitas').limit(3)
-        if (!includeDrafts) aktivitasQuery = aktivitasQuery.eq('is_active', true)
-        const { data: aktivitas, error: errAktivitas } = await aktivitasQuery
-
-        if (errAktivitas) {
-          console.error('Error Aktivitas:', errAktivitas)
-        }
-
-        setHasAktivitas(aktivitas && aktivitas.length > 0)
-
-        let hampersQuery = supabase.from('products').select('*').eq('kategori', 'Hampers').limit(3)
-        if (!includeDrafts) hampersQuery = hampersQuery.eq('is_active', true)
-        const { data: hampers, error: errHampers } = await hampersQuery
-
-        if (errHampers) {
-          console.error('Error Hampers:', errHampers)
-        }
-
-        setHasHampers(hampers && hampers.length > 0)
-
-        let testimoniQuery = supabase.from('testimonials').select('*').limit(6)
-        if (!includeDrafts) testimoniQuery = testimoniQuery.eq('is_active', true)
-        const { data: testimoni, error: errTestimoni } = await testimoniQuery
-
-        if (errTestimoni) {
-          console.error('Error Testimoni:', errTestimoni)
-        }
-
-        setHasTestimoni(testimoni && testimoni.length > 0)
-
-        let simulatorQuery = supabase.from('activity_ideas').select('id').limit(1)
-        if (!includeDrafts) simulatorQuery = simulatorQuery.eq('is_active', true)
-        const { data: simulatorIdeas, error: errSimulator } = await simulatorQuery
-
-        if (errSimulator) {
-          console.error('Error Simulator:', errSimulator)
-        }
-
-        setHasSimulator(simulatorIdeas && simulatorIdeas.length > 0)
+        const [aktivitasRows, hampersRows, testimoniRows, simulatorRows] = await Promise.all([
+          fetchRows('Aktivitas', products('Aktivitas')),
+          fetchRows('Hampers', products('Hampers')),
+          fetchRows('Testimoni', withDrafts(supabase.from('testimonials').select('*').limit(6))),
+          fetchRows('Simulator', withDrafts(supabase.from('activity_ideas').select('id').limit(1))),
+        ])
+        if (cancelled) return
+        setAktivitas(aktivitasRows)
+        setHampers(hampersRows)
+        setTestimoni(testimoniRows)
+        setHasSimulator(simulatorRows.length > 0)
       } catch (error) {
         console.error('Gagal memuat data, tetapi web tetap aman tampil:', error)
       }
     }
     load()
+
+    return () => {
+      cancelled = true
+    }
   }, [includeDrafts])
 
   return (
@@ -73,9 +63,9 @@ export default function HomeContent({ includeDrafts = false }) {
       <Navbar />
       <MainBanner />
       {hasSimulator && <ActivitySimulator includeDrafts={includeDrafts} />}
-      {hasAktivitas && <ProductFavorit1 includeDrafts={includeDrafts} />}
-      {hasHampers && <ProductFavorit2 includeDrafts={includeDrafts} />}
-      {hasTestimoni && <Testimoni includeDrafts={includeDrafts} />}
+      {aktivitas.length > 0 && <ProductFavorit1 products={aktivitas} />}
+      {hampers.length > 0 && <ProductFavorit2 products={hampers} />}
+      {testimoni.length > 0 && <Testimoni testimonials={testimoni} />}
       <CallToAction />
       <MainFooter />
       <StickyWaBar />
