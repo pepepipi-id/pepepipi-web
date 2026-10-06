@@ -1,9 +1,9 @@
 import './globals.css'
 
 const SITE_URL = 'https://pepepipi.id'
-const TITLE = 'Pepepipi — Ide Aktivitas Anak & Hampers Bermakna'
+const TITLE = 'Pepepipi - Toko Alat Tulis Anak dan Hampers'
 const DESCRIPTION =
-  'Ide aktivitas edukatif, paket bahan bermain, dan hampers spesial untuk menemani tumbuh kembang si kecil. Cari ide main sesuai usia anak dan pesan lewat WhatsApp.'
+  'Alat tulis anak, paket aktivitas edukatif, dan hampers spesial untuk menemani tumbuh kembang si kecil. Pesan mudah lewat WhatsApp, Shopee, atau Tokopedia.'
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
